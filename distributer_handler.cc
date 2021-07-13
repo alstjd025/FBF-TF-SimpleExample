@@ -20,9 +20,8 @@ DistributerHandler::DistributerHandler(const char* filename, const char* input_d
     builder_ = new tflite::InterpreterBuilder(**model, *resolver);
     PrintMsg("Create InterpreterBuilder");
     if(builder_ == nullptr){
-        PrintMsg("InterpreterBuilder nullptr ERROR(G)");
+        PrintMsg("InterpreterBuilder nullptr ERROR");
     }
-    printf("before %p\n", builder_);
 }
 
 TfLiteStatus DistributerHandler::Invoke(){
@@ -31,19 +30,15 @@ TfLiteStatus DistributerHandler::Invoke(){
 
 
 TfLiteStatus DistributerHandler::CreateDistributerCPU(char* name){
-    printf("after %p\n", builder_);
     if(builder_ == nullptr){
         PrintMsg("InterpreterBuilder nullptr ERROR");
         return kTfLiteError;
     }
     std::unique_ptr<tflite::Interpreter> interpreter;
-    PrintMsg("Build CPU Interpreter0");
     (*builder_)(&interpreter);
-    PrintMsg("Build CPU Interpreter0.5");
     TFLITE_MINIMAL_CHECK(interpreter != nullptr);
     TFLITE_MINIMAL_CHECK(interpreter->AllocateTensors() == kTfLiteOk);
 
-    PrintMsg("Build CPU Interpreter1");
     DistributerCPU* temp;
     temp = new DistributerCPU(name, std::move(interpreter));
     devices.push_back(temp);
@@ -60,10 +55,9 @@ TfLiteStatus DistributerHandler::CreateDistributerGPU(char* name){
     std::unique_ptr<tflite::Interpreter> interpreter;
     (*builder_)(&interpreter);
     TFLITE_MINIMAL_CHECK(interpreter != nullptr);
-    //std::cout << "==== START GPU_DELEGATE ====\n\n";
     TfLiteDelegate *MyDelegate = NULL;
     const TfLiteGpuDelegateOptionsV2 options = {
-        .is_precision_loss_allowed = 1, //FP16,
+        .is_precision_loss_allowed = 1, 
         .inference_preference = TFLITE_GPU_INFERENCE_PREFERENCE_FAST_SINGLE_ANSWER,
         .inference_priority1 = TFLITE_GPU_INFERENCE_PRIORITY_MIN_LATENCY,
         .inference_priority2 = TFLITE_GPU_INFERENCE_PRIORITY_AUTO,
@@ -75,11 +69,12 @@ TfLiteStatus DistributerHandler::CreateDistributerGPU(char* name){
         PrintMsg("Unable to Use GPU Delegate");
         return kTfLiteError;
     }
-    //std::cout << "\n==== END GPU_DELEGATE ====\n\n\n\n";
     TFLITE_MINIMAL_CHECK(interpreter->AllocateTensors() == kTfLiteOk);
-    
-    //DistributerGPU tempDistributerGPU(name, interpreter.get());
+    DistributerGPU* temp;
+    temp = new DistributerGPU(name, std::move(interpreter));
+    devices.push_back(temp);
     iDeviceCount++;
+    PrintMsg("Build GPU Interpreter");
     return kTfLiteOk;
 }
 
@@ -89,7 +84,7 @@ void DistributerHandler::PrintMsg(const char* msg){
 }
 
 void DistributerHandler::PrintInterpreterStatus(){
-    std::vector<DistributerCPU*>::iterator iter;
+    std::vector<Distributer*>::iterator iter;
     for(iter = devices.begin(); iter != devices.end(); ++iter){
             std::cout << "Device =="<< (*iter)->name << "==\n";
             std::cout << "Name   =="<< (*iter)->type << "==\n";
