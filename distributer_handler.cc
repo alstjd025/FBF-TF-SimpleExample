@@ -11,13 +11,12 @@ DistributerHandler::DistributerHandler(const char* filename, const char* input_d
                                         :inputData(input_data), fileName(filename)
 {
     devices.reserve(10);
-    std::unique_ptr<tflite::FlatBufferModel>* model;
-    model = new std::unique_ptr<tflite::FlatBufferModel>(tflite::FlatBufferModel::BuildFromFile(filename));
+    std::unique_ptr<tflite::FlatBufferModel> model = 
+    tflite::FlatBufferModel::BuildFromFile(filename);
     TFLITE_MINIMAL_CHECK(model != nullptr);
     // Build the interpreter with the InterpreterBuilder.
-    tflite::ops::builtin::BuiltinOpResolver* resolver;
-    resolver = new tflite::ops::builtin::BuiltinOpResolver;
-    builder_ = new tflite::InterpreterBuilder(**model, *resolver);
+    tflite::ops::builtin::BuiltinOpResolver resolver;
+    builder_ = new tflite::InterpreterBuilder(*model, resolver);
     PrintMsg("Create InterpreterBuilder");
     if(builder_ == nullptr){
         PrintMsg("InterpreterBuilder nullptr ERROR");
