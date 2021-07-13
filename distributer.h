@@ -36,12 +36,12 @@ Class Constructor
 
 namespace tflite{
 
-class Distributer
+class Distributer 
 {   
     public:
-        virtual TfLiteStatus Invoke();
-        virtual Interpreter* GetInterpreter();
-    ~Distributer();
+        //virtual TfLiteStatus Invoke() = 0;
+        virtual Interpreter* GetInterpreter() = 0;
+        //virtual ~Distributer() = 0;
 };
 
 //Distributer Class for CPU
@@ -49,13 +49,13 @@ class DistributerCPU : public Distributer
 {
     public:
         DistributerCPU();
-        DistributerCPU(char* name, Interpreter* interpreter);
-        TfLiteStatus Invoke();
+        DistributerCPU(const char* name, Interpreter* interpreter);
+        ~DistributerCPU() {};
+        //TfLiteStatus Invoke();
         Interpreter* GetInterpreter();
-           // {return interpreterCPU;}
 
         Interpreter* interpreterCPU;
-        char* name;
+        const char* name;
 };
 
 //Distributer Class for GPU
@@ -63,13 +63,13 @@ class DistributerGPU : public Distributer
 {
     public:
         DistributerGPU();
-        DistributerGPU(char* name, Interpreter* interpreter);
-        TfLiteStatus Invoke();
+        DistributerGPU(const char* name, Interpreter* interpreter);
+        ~DistributerGPU() {};
+        //TfLiteStatus Invoke();
         Interpreter* GetInterpreter();
-            //{return interpreterGPU;}
 
         Interpreter* interpreterGPU;
-        char* name;
+        const char* name;
 };
 
 } // End of namespace tflite

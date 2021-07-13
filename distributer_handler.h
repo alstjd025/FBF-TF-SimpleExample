@@ -43,14 +43,16 @@ class DistributerHandler
         const char* fileName;
     public:
         DistributerHandler();
-        DistributerHandler(const char* filename, char* input_data);
+        DistributerHandler(const char* filename, const char* input_data);
 
-        TfLiteStatus CreateDistributerCPU(char* name);
-        TfLiteStatus CreateDistributerGPU(char* name);
+        TfLiteStatus CreateDistributerCPU(const char* name);
+        TfLiteStatus CreateDistributerGPU(const char* name);
         TfLiteStatus Invoke();
 
         void PrintInterpreterStatus();
-        void PrintMsg(char* msg);
+        void PrintMsg(const char* msg);
+
+        ~DistributerHandler() {};
         //tflite::Interpreter* GetInterpreter();
 };
 

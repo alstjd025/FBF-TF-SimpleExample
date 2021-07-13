@@ -1,6 +1,6 @@
 TARGET = distributer_simple
 OBJECTS = distributer_simple.o distributer.o distributer_handler.o
-SRCS = distributer_simple.cpp distributer.cpp distributer_handler.cpp
+SRCS = distributer_simple.cc distributer.cc distributer_handler.cc
 INC = -I/home/xavier/tensorflow\
 		-I/home/xavier/tensorflow/tensorflow/lite/tools/make/downloads/flatbuffers/include\
 		-I/home/xavier/tensorflow/tensorflow/lite/tools/make/downloads/absl
@@ -20,7 +20,7 @@ LIBS = -lopencv_gapi\
 		-lopencv_xfeatures2d -lopencv_shape -lopencv_ml -lopencv_ximgproc -lopencv_video -lopencv_xobjdetect\
 		-lopencv_objdetect -lopencv_calib3d -lopencv_imgcodecs -lopencv_features2d -lopencv_flann\
 		-lopencv_xphoto -lopencv_photo -lopencv_cudaimgproc -lopencv_cudafilters -lopencv_imgproc\
-		-lopencv_cudaarithm -lopencv_core -lopencv_cudev\
+		-lopencv_cudaarithm -lopencv_core -lopencv_cudev -lpthread\
 		/home/xavier/tensorflow/bazel-bin/tensorflow/lite/delegates/gpu/libtensorflowlite_gpu_delegate.so\
 		/usr/lib/aarch64-linux-gnu/libEGL.so\
 		/usr/lib/aarch64-linux-gnu/libGL.so /usr/lib/aarch64-linux-gnu/libGLESv2.so
@@ -29,18 +29,20 @@ LIBPATH = -L/home/xavier/tensorflow/tensorflow/lite/tools/make/gen/linux_aarch64
 CC = g++
 
 
-all : $(TARGET)
+all : distributer
 
-distributer_simple : distributer_simple.o
-		g++ -o distributer_simple.o
+distributer.o : distributer.h distributer.cc
+		g++ -c -o distributer.o distributer.cc $(INC) 
 
-distributer_simple.o : distributer_simple.cpp distributer_handler.o distributer_simple.o
-		g++ -o distributer_simple.cpp distributer_handler.o distributer.o
+distributer_handler.o : distributer_handler.h distributer_handler.cc distributer.h
+		g++ -c -o distributer_handler.o distributer_handler.cc $(INC) 
 
-distributer_handler.o : distributer_handler.cpp distributer.o
-		g++ -o distributer_handler.o distributer_handler.cpp distributer.o
+distributer_simple.o : distributer_simple.cc distributer_handler.h 
+		g++ -c -o distributer_simple.o distributer_simple.cc $(INC) 
 
-distributer.o : distributer.o
-		g++ -o distributer.o distributer.cpp $(INC) $(LIBPATH) $(LIBS) 
+distributer : distributer_simple.o distributer_handler.o distributer.o 
+		g++ -o distributer distributer_simple.o distributer_handler.o distributer.o $(INC) $(LIBPATH) $(LIBS) 
 
-
+clean : 
+		rm -f *.o \
+    	rm -f distributer
