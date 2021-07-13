@@ -3,27 +3,29 @@
 namespace tflite
 {
 
-DistributerCPU::DistributerCPU() : name(nullptr), interpreterCPU(nullptr)
-                                    {}
+// DistributerCPU
 
+DistributerCPU::DistributerCPU() : name("NONE"), interpreterCPU(nullptr){}
 
-DistributerCPU::DistributerCPU(const char* name, Interpreter* interpreter) 
-                            : name(name)
+DistributerCPU::DistributerCPU(char* name_, std::unique_ptr<tflite::Interpreter> interpreter) 
 {
-    interpreterCPU = interpreter;
+    std::strcpy(name, name_);
+    interpreterCPU = std::move(interpreter);
 }
 
-Interpreter* DistributerCPU::GetInterpreter(){return interpreterCPU;}
+Interpreter* DistributerCPU::GetInterpreter(){return interpreterCPU.get();}
 
-DistributerGPU::DistributerGPU() : name(nullptr), interpreterGPU(nullptr)
-                                    {}
+// DistributerGPU
 
-DistributerGPU::DistributerGPU(const char* name, Interpreter* interpreter) 
-                            : name(name)
+DistributerGPU::DistributerGPU() : name("NONE"), interpreterGPU(nullptr){}
+
+DistributerGPU::DistributerGPU(char* name_, std::unique_ptr<tflite::Interpreter> interpreter) 
+    
 {
-    interpreterGPU = interpreter;
+    std::strcpy(name, name_);
+    interpreterGPU = std::move(interpreter);
 }
 
-Interpreter* DistributerGPU::GetInterpreter(){return interpreterGPU;}
+Interpreter* DistributerGPU::GetInterpreter(){return interpreterGPU.get();}
 
 } // End of namespace tflite

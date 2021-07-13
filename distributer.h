@@ -41,6 +41,9 @@ class Distributer
     public:
         //virtual TfLiteStatus Invoke() = 0;
         virtual Interpreter* GetInterpreter() = 0;
+        std::unique_ptr<tflite::Interpreter> interpreter;
+        int type = 0;
+        char name[10];
         //virtual ~Distributer() = 0;
 };
 
@@ -49,13 +52,13 @@ class DistributerCPU : public Distributer
 {
     public:
         DistributerCPU();
-        DistributerCPU(const char* name, Interpreter* interpreter);
+        DistributerCPU(char* name_, std::unique_ptr<tflite::Interpreter> interpreter);
         ~DistributerCPU() {};
         //TfLiteStatus Invoke();
         Interpreter* GetInterpreter();
-
-        Interpreter* interpreterCPU;
-        const char* name;
+        std::unique_ptr<tflite::Interpreter> interpreterCPU;
+        int type = 1;
+        char name[10];
 };
 
 //Distributer Class for GPU
@@ -63,13 +66,13 @@ class DistributerGPU : public Distributer
 {
     public:
         DistributerGPU();
-        DistributerGPU(const char* name, Interpreter* interpreter);
+        DistributerGPU(char* name, std::unique_ptr<tflite::Interpreter> interpreter);
         ~DistributerGPU() {};
         //TfLiteStatus Invoke();
         Interpreter* GetInterpreter();
-
-        Interpreter* interpreterGPU;
-        const char* name;
+        std::unique_ptr<tflite::Interpreter> interpreterGPU;
+        int type = 2;
+        char name[10];
 };
 
 } // End of namespace tflite

@@ -1,5 +1,5 @@
 #include "distributer_handler.h"
-
+#include <typeinfo>
 
 namespace tflite
 {
@@ -10,14 +10,19 @@ DistributerHandler::DistributerHandler() : inputData(nullptr),
 DistributerHandler::DistributerHandler(const char* filename, const char* input_data)
                                         :inputData(input_data), fileName(filename)
 {
-    std::unique_ptr<tflite::FlatBufferModel> model =
-        tflite::FlatBufferModel::BuildFromFile(filename);
+    devices.reserve(10);
+    std::unique_ptr<tflite::FlatBufferModel>* model;
+    model = new std::unique_ptr<tflite::FlatBufferModel>(tflite::FlatBufferModel::BuildFromFile(filename));
     TFLITE_MINIMAL_CHECK(model != nullptr);
     // Build the interpreter with the InterpreterBuilder.
-    tflite::ops::builtin::BuiltinOpResolver resolver;
-    tflite::InterpreterBuilder builder(*model, resolver);
-    builder_ = std::move(&builder);
+    tflite::ops::builtin::BuiltinOpResolver* resolver;
+    resolver = new tflite::ops::builtin::BuiltinOpResolver;
+    builder_ = new tflite::InterpreterBuilder(**model, *resolver);
     PrintMsg("Create InterpreterBuilder");
+    if(builder_ == nullptr){
+        PrintMsg("InterpreterBuilder nullptr ERROR(G)");
+    }
+    printf("before %p\n", builder_);
 }
 
 TfLiteStatus DistributerHandler::Invoke(){
@@ -25,7 +30,8 @@ TfLiteStatus DistributerHandler::Invoke(){
 }
 
 
-TfLiteStatus DistributerHandler::CreateDistributerCPU(const char* name){
+TfLiteStatus DistributerHandler::CreateDistributerCPU(char* name){
+    printf("after %p\n", builder_);
     if(builder_ == nullptr){
         PrintMsg("InterpreterBuilder nullptr ERROR");
         return kTfLiteError;
@@ -37,16 +43,16 @@ TfLiteStatus DistributerHandler::CreateDistributerCPU(const char* name){
     TFLITE_MINIMAL_CHECK(interpreter != nullptr);
     TFLITE_MINIMAL_CHECK(interpreter->AllocateTensors() == kTfLiteOk);
 
-    DistributerCPU tempDistributerCPU(name, interpreter.get());
     PrintMsg("Build CPU Interpreter1");
-    devices.push_back(&tempDistributerCPU);
-    PrintMsg("Build CPU Interpreter2");
+    DistributerCPU* temp;
+    temp = new DistributerCPU(name, std::move(interpreter));
+    devices.push_back(temp);
     iDeviceCount++;
     PrintMsg("Build CPU Interpreter");
     return kTfLiteOk;
 }
 
-TfLiteStatus DistributerHandler::CreateDistributerGPU(const char* name){
+TfLiteStatus DistributerHandler::CreateDistributerGPU(char* name){
     if(builder_ == nullptr){
         PrintMsg("InterpreterBuilder nullptr ERROR");
         return kTfLiteError;
@@ -71,8 +77,8 @@ TfLiteStatus DistributerHandler::CreateDistributerGPU(const char* name){
     }
     //std::cout << "\n==== END GPU_DELEGATE ====\n\n\n\n";
     TFLITE_MINIMAL_CHECK(interpreter->AllocateTensors() == kTfLiteOk);
-    DistributerGPU tempDistributerGPU(name, interpreter.get());
-    devices.push_back(&tempDistributerGPU);
+    
+    //DistributerGPU tempDistributerGPU(name, interpreter.get());
     iDeviceCount++;
     return kTfLiteOk;
 }
@@ -83,8 +89,10 @@ void DistributerHandler::PrintMsg(const char* msg){
 }
 
 void DistributerHandler::PrintInterpreterStatus(){
-    std::vector<Distributer*>::iterator iter;
+    std::vector<DistributerCPU*>::iterator iter;
     for(iter = devices.begin(); iter != devices.end(); ++iter){
+            std::cout << "Device =="<< (*iter)->name << "==\n";
+            std::cout << "Name   =="<< (*iter)->type << "==\n";
            PrintInterpreterState((*iter)->GetInterpreter());
         }
     return;

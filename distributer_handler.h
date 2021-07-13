@@ -36,8 +36,9 @@ namespace tflite
 class DistributerHandler
 {
     private:
-        std::vector<Distributer*> devices;
+        std::vector<DistributerCPU*> devices;
         tflite::InterpreterBuilder* builder_;
+        tflite::DistributerCPU* dummy;
         int iDeviceCount; 
         const char* inputData;
         const char* fileName;
@@ -45,8 +46,8 @@ class DistributerHandler
         DistributerHandler();
         DistributerHandler(const char* filename, const char* input_data);
 
-        TfLiteStatus CreateDistributerCPU(const char* name);
-        TfLiteStatus CreateDistributerGPU(const char* name);
+        TfLiteStatus CreateDistributerCPU(char* name);
+        TfLiteStatus CreateDistributerGPU(char* name);
         TfLiteStatus Invoke();
 
         void PrintInterpreterStatus();

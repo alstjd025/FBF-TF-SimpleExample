@@ -7,15 +7,17 @@ int main(int argc, char* argv[])
         return 1;
     }
     const char* filename = argv[1];
-    tflite::DistributerHandler Dis(filename, "input");
-    if(Dis.CreateDistributerCPU("CPU1") != kTfLiteOk){
+    tflite::DistributerHandler* D;
+    D = new tflite::DistributerHandler(filename, "input");
+    
+    if(D->CreateDistributerCPU("CPU1") != kTfLiteOk){
         std::cout << "Cannot Create DistributerCPU" << "\n";
         return 1;
     }
-    if(Dis.CreateDistributerGPU("GPU1") != kTfLiteOk){
+    if(D->CreateDistributerGPU("GPU1") != kTfLiteOk){
         std::cout << "Cannot Create DistributerCPU" << "\n";
         return 1;
     }
-
-    Dis.PrintInterpreterStatus();
+    
+    D->PrintInterpreterStatus();
 }
