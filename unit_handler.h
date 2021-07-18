@@ -3,19 +3,20 @@
 #include <cstdio>
 #include <iostream>
 #include <fstream>
-#include <string>
 #include <cstdarg>
 #include <vector>
+#include <queue>
 #include "tensorflow/lite/interpreter.h"
 #include "tensorflow/lite/kernels/register.h"
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/optional_debug_tools.h"
 #include "tensorflow/lite/delegates/gpu/delegate.h"
 #include "tensorflow/lite/c/common.h"
+#include <functional>
 #include "thread"
+#include "mutex"
 #include "future"
-#include "distributer.h"
-
+#include "unit.h"
 
 #define TFLITE_MINIMAL_CHECK(x)                              \
   if (!(x)) {                                                \
@@ -24,35 +25,32 @@
   }
 
 /*
-Distributer handler class
-
-
-
+Unit handler class
 */
-
-
 namespace tflite
 {
-class DistributerHandler
+class UnitHandler
 {
     private:
-        std::vector<Distributer*> devices;
+        std::vector<Unit*> vUnitContainer;
         tflite::InterpreterBuilder* builder_;
-        int iDeviceCount; 
+        int iUnitCount; 
+        int numThreads;
         const char* inputData;
         const char* fileName;
+        std::vector<std::function<void>*> workers;
     public:
-        DistributerHandler();
-        DistributerHandler(const char* filename, const char* input_data);
+        UnitHandler();
+        UnitHandler(const char* filename, const char* input_data);
 
-        TfLiteStatus CreateDistributerCPU(char* name);
-        TfLiteStatus CreateDistributerGPU(char* name);
-        TfLiteStatus Invoke();
+        TfLiteStatus CreateUnitCPU(const char* name);
+        TfLiteStatus CreateUnitGPU(const char* name);
+        TfLiteStatus Invoke(std::vector<cv::Mat> vec);
 
         void PrintInterpreterStatus();
         void PrintMsg(const char* msg);
 
-        ~DistributerHandler() {};
+        ~UnitHandler() {};
         //tflite::Interpreter* GetInterpreter();
 };
 

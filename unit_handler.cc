@@ -1,34 +1,32 @@
-#include "distributer_handler.h"
+#include "unit_handler.h"
 #include <typeinfo>
 
 namespace tflite
 {
 
-DistributerHandler::DistributerHandler() : inputData(nullptr), 
+UnitHandler::UnitHandler() : inputData(nullptr), 
                                         fileName(nullptr), builder_(nullptr) {}
 
-DistributerHandler::DistributerHandler(const char* filename, const char* input_data)
+UnitHandler::UnitHandler(const char* filename, const char* input_data)
                                         :inputData(input_data), fileName(filename)
 {
-    devices.reserve(10);
-    std::unique_ptr<tflite::FlatBufferModel> model = 
-    tflite::FlatBufferModel::BuildFromFile(filename);
+    vUnitContainer.reserve(10);
+    std::unique_ptr<tflite::FlatBufferModel>* model;
+    model = new std::unique_ptr<tflite::FlatBufferModel>(tflite::FlatBufferModel::BuildFromFile(filename));
     TFLITE_MINIMAL_CHECK(model != nullptr);
     // Build the interpreter with the InterpreterBuilder.
-    tflite::ops::builtin::BuiltinOpResolver resolver;
-    builder_ = new tflite::InterpreterBuilder(*model, resolver);
+    tflite::ops::builtin::BuiltinOpResolver* resolver;
+    resolver = new tflite::ops::builtin::BuiltinOpResolver;
+    builder_ = new tflite::InterpreterBuilder(**model, *resolver);
     PrintMsg("Create InterpreterBuilder");
     if(builder_ == nullptr){
         PrintMsg("InterpreterBuilder nullptr ERROR");
     }
 }
 
-TfLiteStatus DistributerHandler::Invoke(){
-
-}
 
 
-TfLiteStatus DistributerHandler::CreateDistributerCPU(char* name){
+TfLiteStatus UnitHandler::CreateUnitCPU(const char* name){
     if(builder_ == nullptr){
         PrintMsg("InterpreterBuilder nullptr ERROR");
         return kTfLiteError;
@@ -37,16 +35,16 @@ TfLiteStatus DistributerHandler::CreateDistributerCPU(char* name){
     (*builder_)(&interpreter);
     TFLITE_MINIMAL_CHECK(interpreter != nullptr);
     TFLITE_MINIMAL_CHECK(interpreter->AllocateTensors() == kTfLiteOk);
-
-    DistributerCPU* temp;
-    temp = new DistributerCPU(name, std::move(interpreter));
-    devices.push_back(temp);
-    iDeviceCount++;
+    
+    UnitCPU* temp;
+    temp = new UnitCPU(name, std::move(interpreter));
+    vUnitContainer.push_back(temp);
+    iUnitCount++;    
     PrintMsg("Build CPU Interpreter");
     return kTfLiteOk;
 }
 
-TfLiteStatus DistributerHandler::CreateDistributerGPU(char* name){
+TfLiteStatus UnitHandler::CreateUnitGPU(const char* name){
     if(builder_ == nullptr){
         PrintMsg("InterpreterBuilder nullptr ERROR");
         return kTfLiteError;
@@ -63,33 +61,40 @@ TfLiteStatus DistributerHandler::CreateDistributerGPU(char* name){
         .inference_priority3 = TFLITE_GPU_INFERENCE_PRIORITY_AUTO,
     };
     MyDelegate = TfLiteGpuDelegateV2Create(&options);
-
     if(interpreter->ModifyGraphWithDelegate(MyDelegate) != kTfLiteOk) {
         PrintMsg("Unable to Use GPU Delegate");
         return kTfLiteError;
     }
     TFLITE_MINIMAL_CHECK(interpreter->AllocateTensors() == kTfLiteOk);
-    DistributerGPU* temp;
-    temp = new DistributerGPU(name, std::move(interpreter));
-    devices.push_back(temp);
-    iDeviceCount++;
+    UnitGPU* temp;
+    temp = new UnitGPU(name, std::move(interpreter));
+    vUnitContainer.push_back(temp);
+    iUnitCount++;
     PrintMsg("Build GPU Interpreter");
     return kTfLiteOk;
 }
 
-void DistributerHandler::PrintMsg(const char* msg){
-    std::cout << "DistributerHandler : \"" << msg << "\"\n";
+void UnitHandler::PrintMsg(const char* msg){
+    std::cout << "UnitHandler : \"" << msg << "\"\n";
     return;
 }
 
-void DistributerHandler::PrintInterpreterStatus(){
-    std::vector<Distributer*>::iterator iter;
-    for(iter = devices.begin(); iter != devices.end(); ++iter){
-            std::cout << "Device =="<< (*iter)->name << "==\n";
-            std::cout << "Name   =="<< (*iter)->type << "==\n";
-           PrintInterpreterState((*iter)->GetInterpreter());
+void UnitHandler::PrintInterpreterStatus(){
+    std::vector<Unit*>::iterator iter;
+    for(iter = vUnitContainer.begin(); iter != vUnitContainer.end(); ++iter){
+            std::cout << "Device ====== "<< (*iter)->name << " ======\n";
+            PrintInterpreterState((*iter)->GetInterpreter());
         }
     return;
 }
 
+TfLiteStatus UnitHandler::Invoke(std::vector<cv::Mat> vec){
+    std::vector<Unit*>::iterator iter;
+    for(iter = vUnitContainer.begin(); iter != vUnitContainer.end(); ++iter){
+        Unit* unit = (*iter);
+        unit->input = vec;
+        unit->myThread.join();
+    }
+    return kTfLiteOk;
+}
 } // End of namespace tflite

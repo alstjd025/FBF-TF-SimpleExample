@@ -2,8 +2,9 @@
 #include <cstdio>
 #include <iostream>
 #include <fstream>
-#include <string>
 #include <cstdarg>
+#include <string>
+#include <opencv2/opencv.hpp>
 #include "tensorflow/lite/interpreter.h"
 #include "tensorflow/lite/kernels/register.h"
 #include "tensorflow/lite/model.h"
@@ -13,9 +14,16 @@
 #include "thread"
 #include "future"
 
+#define Image_x 28
+#define Image_y 28
+#define Image_ch 1
+#define SEQ 10000
+#define OUT_SEQ 3
+
+std::mutex mtx_lock;
 
 /*
-Distributer Class for Tflite Distribute Stradegy
+Unit Class for Tflite Distribute Stradegy
 
 Class Constructor
     args -> (tflite::interpreterBuilder *builder,
@@ -36,43 +44,48 @@ Class Constructor
 
 namespace tflite{
 
-class Distributer 
+class Unit 
 {   
     public:
-        //virtual TfLiteStatus Invoke() = 0;
         virtual Interpreter* GetInterpreter() = 0;
+        virtual TfLiteStatus Invoke() = 0;
+
+        std::vector<cv::Mat> input;
+        std::thread myThread;
         std::unique_ptr<tflite::Interpreter> interpreter;
-        int type = 0;
-        char name[10];
-        //virtual ~Distributer() = 0;
+        std::string name;
 };
 
-//Distributer Class for CPU
-class DistributerCPU : public Distributer
+//Unit Class for CPU
+class UnitCPU : public Unit
 {
     public:
-        DistributerCPU();
-        DistributerCPU(char* name_, std::unique_ptr<tflite::Interpreter> interpreter);
-        ~DistributerCPU() {};
-        //TfLiteStatus Invoke();
+        UnitCPU();
+        UnitCPU(const char* name_, std::unique_ptr<tflite::Interpreter> interpreter);
+        ~UnitCPU() {};
+        TfLiteStatus Invoke();
         Interpreter* GetInterpreter();
+        
+        std::vector<cv::Mat> input;
+        std::thread myThread;
         std::unique_ptr<tflite::Interpreter> interpreterCPU;
-        int type = 1;
-        char name[10];
+        std::string name;
 };
 
-//Distributer Class for GPU
-class DistributerGPU : public Distributer
+//Unit Class for GPU
+class UnitGPU : public Unit
 {
     public:
-        DistributerGPU();
-        DistributerGPU(char* name, std::unique_ptr<tflite::Interpreter> interpreter);
-        ~DistributerGPU() {};
-        //TfLiteStatus Invoke();
+        UnitGPU();
+        UnitGPU(const char* name, std::unique_ptr<tflite::Interpreter> interpreter);
+        ~UnitGPU() {};
+        TfLiteStatus Invoke();
         Interpreter* GetInterpreter();
+
+        std::vector<cv::Mat> input;
+        std::thread myThread;
         std::unique_ptr<tflite::Interpreter> interpreterGPU;
-        int type = 2;
-        char name[10];
+        string name;
 };
 
 } // End of namespace tflite

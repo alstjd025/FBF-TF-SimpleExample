@@ -1,6 +1,6 @@
-TARGET = distributer_simple
-OBJECTS = distributer_simple.o distributer.o distributer_handler.o
-SRCS = distributer_simple.cc distributer.cc distributer_handler.cc
+TARGET = unit_simple
+OBJECTS = unit_simple.o unit.o unit_handler.o
+SRCS = unit_simple.cc unit.cc unit_handler.cc
 INC = -I/home/xavier/tensorflow\
 		-I/home/xavier/tensorflow/tensorflow/lite/tools/make/downloads/flatbuffers/include\
 		-I/home/xavier/tensorflow/tensorflow/lite/tools/make/downloads/absl
@@ -29,20 +29,20 @@ LIBPATH = -L/home/xavier/tensorflow/tensorflow/lite/tools/make/gen/linux_aarch64
 CC = g++
 
 
-all : distributer
+all : unit
 
-distributer.o : distributer.h distributer.cc
-		g++ -c -o distributer.o distributer.cc $(INC) 
+unit.o : unit.h unit.cc
+		g++ -c -o unit.o unit.cc $(INC) 
 
-distributer_handler.o : distributer_handler.h distributer_handler.cc distributer.h
-		g++ -c -o distributer_handler.o distributer_handler.cc $(INC) 
+unit_handler.o : unit_handler.h unit_handler.cc unit.h
+		g++ -c -o unit_handler.o unit_handler.cc $(INC) 
 
-distributer_simple.o : distributer_simple.cc distributer_handler.h 
-		g++ -c -o distributer_simple.o distributer_simple.cc $(INC) 
+unit_simple.o : unit_simple.cc unit_handler.h 
+		g++ -c -o unit_simple.o unit_simple.cc $(INC) 
 
-distributer : distributer_simple.o distributer_handler.o distributer.o 
-		g++ -o distributer distributer_simple.o distributer_handler.o distributer.o $(INC) $(LIBPATH) $(LIBS) 
+unit : unit_simple.o unit_handler.o unit.o 
+		g++ -o unit unit_simple.o unit_handler.o unit.o $(INC) $(LIBPATH) $(LIBS) 
 
 clean : 
 		rm -f *.o \
-    	rm -f distributer
+    	rm -f unit
