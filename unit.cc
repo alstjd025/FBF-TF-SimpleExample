@@ -16,6 +16,7 @@ TfLiteStatus UnitCPU::Invoke() {
     double execution_time = 0;  
     for(int o_loop=0; o_loop<OUT_SEQ; o_loop++){
         for(int k=0; k<SEQ; k++){
+            mtx_lock.lock();
             std::cout << "CPU" << k + o_loop*SEQ << "\n";
             for (int i=0; i<Image_x; i++){
                 for ( int j=0; j<Image_y; j++){
@@ -29,6 +30,7 @@ TfLiteStatus UnitCPU::Invoke() {
             clock_t tEnd = clock();
             clock_t Elepsed = tEnd - tStart;
             execution_time = execution_time + ((double)Elepsed / CLOCKS_PER_SEC);
+            mtx_lock.unlock();
         }
     }
     execution_time /=(SEQ * OUT_SEQ);
@@ -53,11 +55,13 @@ UnitGPU::UnitGPU(const char* name_, std::unique_ptr<tflite::Interpreter> interpr
             : name(name_), interpreterGPU(std::move(interpreter)) {}
 
 TfLiteStatus UnitGPU::Invoke() {
+    
     std::cout << "Starting GPU Job" << "\n";
     double execution_time = 0;
     for(int o_loop=0; o_loop<OUT_SEQ; o_loop++){
         for(int k=0; k<SEQ; k++){
             std::cout << "GPU" << k + o_loop*SEQ << "\n";
+            mtx_lock.lock();
             for (int i=0; i<Image_x; i++){
                 for ( int j=0; j<Image_y; j++){
                     std::cout << "GPUUUU \n"; 
@@ -72,6 +76,7 @@ TfLiteStatus UnitGPU::Invoke() {
             std::cout << "adadada \n";
             clock_t Elepsed = tEnd - tStart;
             execution_time = execution_time + ((double)Elepsed / CLOCKS_PER_SEC);
+            mtx_lock.unlock();
         }
     }
     execution_time /=(SEQ * OUT_SEQ);
