@@ -4,13 +4,14 @@
 #include <fstream>
 #include <cstdarg>
 #include <string>
-#include <opencv2/opencv.hpp>
+#include "opencv2/opencv.hpp"
 #include "tensorflow/lite/interpreter.h"
 #include "tensorflow/lite/kernels/register.h"
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/optional_debug_tools.h"
 #include "tensorflow/lite/delegates/gpu/delegate.h"
 #include "tensorflow/lite/c/common.h"
+#include "mutex"
 #include "thread"
 #include "future"
 
@@ -20,7 +21,13 @@
 #define SEQ 10000
 #define OUT_SEQ 3
 
-std::mutex mtx_lock;
+extern std::mutex mtx_lock;
+
+#define TFLITE_MINIMAL_CHECK(x)                              \
+  if (!(x)) {                                                \
+    fprintf(stderr, "Error at %s:%d\n", __FILE__, __LINE__); \
+    exit(1);                                                 \
+  }
 
 /*
 Unit Class for Tflite Distribute Stradegy
@@ -44,13 +51,15 @@ Class Constructor
 
 namespace tflite{
 
+
 class Unit 
 {   
     public:
         virtual Interpreter* GetInterpreter() = 0;
         virtual TfLiteStatus Invoke() = 0;
+        virtual void SetInput(std::vector<cv::Mat>* input_) = 0;
 
-        std::vector<cv::Mat> input;
+        std::vector<cv::Mat>* input;
         std::thread myThread;
         std::unique_ptr<tflite::Interpreter> interpreter;
         std::string name;
@@ -65,11 +74,13 @@ class UnitCPU : public Unit
         ~UnitCPU() {};
         TfLiteStatus Invoke();
         Interpreter* GetInterpreter();
+        void SetInput(std::vector<cv::Mat>* input_);
         
-        std::vector<cv::Mat> input;
+        std::vector<cv::Mat>* input;
         std::thread myThread;
         std::unique_ptr<tflite::Interpreter> interpreterCPU;
         std::string name;
+        double cpu_t;
 };
 
 //Unit Class for GPU
@@ -81,11 +92,13 @@ class UnitGPU : public Unit
         ~UnitGPU() {};
         TfLiteStatus Invoke();
         Interpreter* GetInterpreter();
+        void SetInput(std::vector<cv::Mat>* input_);
 
-        std::vector<cv::Mat> input;
+        std::vector<cv::Mat>* input;
         std::thread myThread;
         std::unique_ptr<tflite::Interpreter> interpreterGPU;
-        string name;
+        std::string name;
+        double gpu_t;
 };
 
 } // End of namespace tflite

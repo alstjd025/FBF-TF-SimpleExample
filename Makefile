@@ -3,7 +3,8 @@ OBJECTS = unit_simple.o unit.o unit_handler.o
 SRCS = unit_simple.cc unit.cc unit_handler.cc
 INC = -I/home/xavier/tensorflow\
 		-I/home/xavier/tensorflow/tensorflow/lite/tools/make/downloads/flatbuffers/include\
-		-I/home/xavier/tensorflow/tensorflow/lite/tools/make/downloads/absl
+		-I/home/xavier/tensorflow/tensorflow/lite/tools/make/downloads/absl\
+		-I/usr/include/opencv4
 LIBS = -lopencv_gapi\
 		-ltensorflow-lite\
 		-lflatbuffers /lib/aarch64-linux-gnu/libdl.so.2\

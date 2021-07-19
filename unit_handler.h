@@ -14,15 +14,8 @@
 #include "tensorflow/lite/c/common.h"
 #include <functional>
 #include "thread"
-#include "mutex"
 #include "future"
 #include "unit.h"
-
-#define TFLITE_MINIMAL_CHECK(x)                              \
-  if (!(x)) {                                                \
-    fprintf(stderr, "Error at %s:%d\n", __FILE__, __LINE__); \
-    exit(1);                                                 \
-  }
 
 /*
 Unit handler class
@@ -36,16 +29,16 @@ class UnitHandler
         tflite::InterpreterBuilder* builder_;
         int iUnitCount; 
         int numThreads;
-        const char* inputData;
+        std::vector<cv::Mat>* inputData;
         const char* fileName;
         std::vector<std::function<void>*> workers;
     public:
         UnitHandler();
-        UnitHandler(const char* filename, const char* input_data);
+        UnitHandler(const char* filename);
 
-        TfLiteStatus CreateUnitCPU(const char* name);
-        TfLiteStatus CreateUnitGPU(const char* name);
-        TfLiteStatus Invoke(std::vector<cv::Mat> vec);
+        TfLiteStatus CreateUnitCPU(const char* name, std::vector<cv::Mat>* input);
+        TfLiteStatus CreateUnitGPU(const char* name, std::vector<cv::Mat>* input);
+        TfLiteStatus Invoke();
 
         void PrintInterpreterStatus();
         void PrintMsg(const char* msg);

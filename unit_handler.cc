@@ -1,15 +1,18 @@
 #include "unit_handler.h"
 #include <typeinfo>
 
+extern std::mutex mtx_lock;
+
 namespace tflite
 {
 
 UnitHandler::UnitHandler() : inputData(nullptr), 
                                         fileName(nullptr), builder_(nullptr) {}
 
-UnitHandler::UnitHandler(const char* filename, const char* input_data)
-                                        :inputData(input_data), fileName(filename)
+UnitHandler::UnitHandler(const char* filename)
+                                        :fileName(filename)
 {
+    std::cout << "You have " << std::thread::hardware_concurrency() << " Processors " << "\n";
     vUnitContainer.reserve(10);
     std::unique_ptr<tflite::FlatBufferModel>* model;
     model = new std::unique_ptr<tflite::FlatBufferModel>(tflite::FlatBufferModel::BuildFromFile(filename));
@@ -24,9 +27,7 @@ UnitHandler::UnitHandler(const char* filename, const char* input_data)
     }
 }
 
-
-
-TfLiteStatus UnitHandler::CreateUnitCPU(const char* name){
+TfLiteStatus UnitHandler::CreateUnitCPU(const char* name, std::vector<cv::Mat>* input){
     if(builder_ == nullptr){
         PrintMsg("InterpreterBuilder nullptr ERROR");
         return kTfLiteError;
@@ -38,13 +39,14 @@ TfLiteStatus UnitHandler::CreateUnitCPU(const char* name){
     
     UnitCPU* temp;
     temp = new UnitCPU(name, std::move(interpreter));
+    temp->SetInput(input);
     vUnitContainer.push_back(temp);
     iUnitCount++;    
     PrintMsg("Build CPU Interpreter");
     return kTfLiteOk;
 }
 
-TfLiteStatus UnitHandler::CreateUnitGPU(const char* name){
+TfLiteStatus UnitHandler::CreateUnitGPU(const char* name, std::vector<cv::Mat>* input){
     if(builder_ == nullptr){
         PrintMsg("InterpreterBuilder nullptr ERROR");
         return kTfLiteError;
@@ -68,6 +70,7 @@ TfLiteStatus UnitHandler::CreateUnitGPU(const char* name){
     TFLITE_MINIMAL_CHECK(interpreter->AllocateTensors() == kTfLiteOk);
     UnitGPU* temp;
     temp = new UnitGPU(name, std::move(interpreter));
+    temp->SetInput(input);
     vUnitContainer.push_back(temp);
     iUnitCount++;
     PrintMsg("Build GPU Interpreter");
@@ -88,12 +91,11 @@ void UnitHandler::PrintInterpreterStatus(){
     return;
 }
 
-TfLiteStatus UnitHandler::Invoke(std::vector<cv::Mat> vec){
+TfLiteStatus UnitHandler::Invoke(){
+    PrintMsg("Invoke");
     std::vector<Unit*>::iterator iter;
     for(iter = vUnitContainer.begin(); iter != vUnitContainer.end(); ++iter){
-        Unit* unit = (*iter);
-        unit->input = vec;
-        unit->myThread.join();
+        (*iter)->myThread = std::thread(&Unit::Invoke, (*iter));
     }
     return kTfLiteOk;
 }
