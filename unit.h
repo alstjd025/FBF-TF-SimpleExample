@@ -19,7 +19,7 @@
 #define Image_y 28
 #define Image_ch 1
 #define SEQ 10000
-#define OUT_SEQ 3
+#define OUT_SEQ 100
 
 extern std::mutex mtx_lock;
 
@@ -57,9 +57,9 @@ class Unit
     public:
         virtual Interpreter* GetInterpreter() = 0;
         virtual TfLiteStatus Invoke() = 0;
-        virtual void SetInput(std::vector<cv::Mat>* input_) = 0;
+        virtual void SetInput(std::vector<cv::Mat> input_) = 0;
 
-        std::vector<cv::Mat>* input;
+        std::vector<cv::Mat> input;
         std::thread myThread;
         std::unique_ptr<tflite::Interpreter> interpreter;
         std::string name;
@@ -70,15 +70,15 @@ class UnitCPU : public Unit
 {
     public:
         UnitCPU();
-        UnitCPU(const char* name_, std::unique_ptr<tflite::Interpreter> interpreter);
+        UnitCPU(const char* name_, std::unique_ptr<tflite::Interpreter>* interpreter);
         ~UnitCPU() {};
         TfLiteStatus Invoke();
         Interpreter* GetInterpreter();
-        void SetInput(std::vector<cv::Mat>* input_);
+        void SetInput(std::vector<cv::Mat> input_);
         
-        std::vector<cv::Mat>* input;
+        std::vector<cv::Mat> input;
         std::thread myThread;
-        std::unique_ptr<tflite::Interpreter> interpreterCPU;
+        std::unique_ptr<tflite::Interpreter>* interpreterCPU;
         std::string name;
         double cpu_t;
 };
@@ -88,15 +88,15 @@ class UnitGPU : public Unit
 {
     public:
         UnitGPU();
-        UnitGPU(const char* name, std::unique_ptr<tflite::Interpreter> interpreter);
+        UnitGPU(const char* name, std::unique_ptr<tflite::Interpreter>* interpreter);
         ~UnitGPU() {};
         TfLiteStatus Invoke();
         Interpreter* GetInterpreter();
-        void SetInput(std::vector<cv::Mat>* input_);
+        void SetInput(std::vector<cv::Mat> input_);
 
-        std::vector<cv::Mat>* input;
+        std::vector<cv::Mat> input;
         std::thread myThread;
-        std::unique_ptr<tflite::Interpreter> interpreterGPU;
+        std::unique_ptr<tflite::Interpreter>* interpreterGPU;
         std::string name;
         double gpu_t;
 };

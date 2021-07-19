@@ -39,7 +39,7 @@ void read_Mnist(string filename, vector<cv::Mat>& vec) {
 				}
 			}
 			vec.push_back(tp);
-            //cout << "Get one Image" << "\n";
+            cout << "Get " << i << " Images" << "\n";
 		}
 	}
 	else {
@@ -73,19 +73,22 @@ int main(int argc, char* argv[])
 
     const char* filename = argv[1];
     
-	vector<cv::Mat> vec;
-    read_Mnist("train-images-idx3-ubyte", vec);
+	vector<cv::Mat> vCPU;
+	vector<cv::Mat> vGPU;
+    read_Mnist("train-images-idx3-ubyte", vCPU);
+	vGPU = vCPU;
     vector<unsigned char> arr;
 	read_Mnist_Label("train-labels-idx1-ubyte", arr);
 
 	tflite::UnitHandler Uhandler(filename);
     
-    if(Uhandler.CreateUnitCPU("CPU1", &vec) != kTfLiteOk){
+    if(Uhandler.CreateUnitCPU("CPU1", vCPU) != kTfLiteOk){
         std::cout << "Cannot Create UnitCPU" << "\n";
         return 1;
     }
-    if(Uhandler.CreateUnitGPU("GPU1", &vec) != kTfLiteOk){
-        std::cout << "Cannot Create UnitCPU" << "\n";
+	
+    if(Uhandler.CreateUnitGPU("GPU1", vGPU) != kTfLiteOk){
+        std::cout << "Cannot Create UnitGPU" << "\n";
         return 1;
     }
     

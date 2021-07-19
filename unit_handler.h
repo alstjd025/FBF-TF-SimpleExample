@@ -29,15 +29,15 @@ class UnitHandler
         tflite::InterpreterBuilder* builder_;
         int iUnitCount; 
         int numThreads;
-        std::vector<cv::Mat>* inputData;
+        std::vector<cv::Mat> inputData;
         const char* fileName;
         std::vector<std::function<void>*> workers;
     public:
         UnitHandler();
         UnitHandler(const char* filename);
 
-        TfLiteStatus CreateUnitCPU(const char* name, std::vector<cv::Mat>* input);
-        TfLiteStatus CreateUnitGPU(const char* name, std::vector<cv::Mat>* input);
+        TfLiteStatus CreateUnitCPU(const char* name, std::vector<cv::Mat> input);
+        TfLiteStatus CreateUnitGPU(const char* name, std::vector<cv::Mat> input);
         TfLiteStatus Invoke();
 
         void PrintInterpreterStatus();

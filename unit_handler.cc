@@ -6,8 +6,7 @@ extern std::mutex mtx_lock;
 namespace tflite
 {
 
-UnitHandler::UnitHandler() : inputData(nullptr), 
-                                        fileName(nullptr), builder_(nullptr) {}
+UnitHandler::UnitHandler() :  fileName(nullptr), builder_(nullptr) {}
 
 UnitHandler::UnitHandler(const char* filename)
                                         :fileName(filename)
@@ -27,15 +26,16 @@ UnitHandler::UnitHandler(const char* filename)
     }
 }
 
-TfLiteStatus UnitHandler::CreateUnitCPU(const char* name, std::vector<cv::Mat>* input){
+TfLiteStatus UnitHandler::CreateUnitCPU(const char* name, std::vector<cv::Mat> input){
     if(builder_ == nullptr){
         PrintMsg("InterpreterBuilder nullptr ERROR");
         return kTfLiteError;
     }
-    std::unique_ptr<tflite::Interpreter> interpreter;
-    (*builder_)(&interpreter);
+    std::unique_ptr<tflite::Interpreter>* interpreter;
+    interpreter = new std::unique_ptr<tflite::Interpreter>;
+    (*builder_)(interpreter);
     TFLITE_MINIMAL_CHECK(interpreter != nullptr);
-    TFLITE_MINIMAL_CHECK(interpreter->AllocateTensors() == kTfLiteOk);
+    TFLITE_MINIMAL_CHECK(interpreter->get()->AllocateTensors() == kTfLiteOk);
     
     UnitCPU* temp;
     temp = new UnitCPU(name, std::move(interpreter));
@@ -46,13 +46,14 @@ TfLiteStatus UnitHandler::CreateUnitCPU(const char* name, std::vector<cv::Mat>* 
     return kTfLiteOk;
 }
 
-TfLiteStatus UnitHandler::CreateUnitGPU(const char* name, std::vector<cv::Mat>* input){
+TfLiteStatus UnitHandler::CreateUnitGPU(const char* name, std::vector<cv::Mat> input){
     if(builder_ == nullptr){
         PrintMsg("InterpreterBuilder nullptr ERROR");
         return kTfLiteError;
     }
-    std::unique_ptr<tflite::Interpreter> interpreter;
-    (*builder_)(&interpreter);
+    std::unique_ptr<tflite::Interpreter>* interpreter;
+    interpreter = new std::unique_ptr<tflite::Interpreter>;
+    (*builder_)(interpreter);
     TFLITE_MINIMAL_CHECK(interpreter != nullptr);
     TfLiteDelegate *MyDelegate = NULL;
     const TfLiteGpuDelegateOptionsV2 options = {
@@ -63,11 +64,11 @@ TfLiteStatus UnitHandler::CreateUnitGPU(const char* name, std::vector<cv::Mat>* 
         .inference_priority3 = TFLITE_GPU_INFERENCE_PRIORITY_AUTO,
     };
     MyDelegate = TfLiteGpuDelegateV2Create(&options);
-    if(interpreter->ModifyGraphWithDelegate(MyDelegate) != kTfLiteOk) {
+    if(interpreter->get()->ModifyGraphWithDelegate(MyDelegate) != kTfLiteOk) {
         PrintMsg("Unable to Use GPU Delegate");
         return kTfLiteError;
     }
-    TFLITE_MINIMAL_CHECK(interpreter->AllocateTensors() == kTfLiteOk);
+    TFLITE_MINIMAL_CHECK(interpreter->get()->AllocateTensors() == kTfLiteOk);
     UnitGPU* temp;
     temp = new UnitGPU(name, std::move(interpreter));
     temp->SetInput(input);
@@ -94,9 +95,10 @@ void UnitHandler::PrintInterpreterStatus(){
 TfLiteStatus UnitHandler::Invoke(){
     PrintMsg("Invoke");
     std::vector<Unit*>::iterator iter;
+    
     for(iter = vUnitContainer.begin(); iter != vUnitContainer.end(); ++iter){
         (*iter)->myThread = std::thread(&Unit::Invoke, (*iter));
     }
-    return kTfLiteOk;
+    
 }
 } // End of namespace tflite
