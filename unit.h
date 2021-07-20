@@ -51,6 +51,17 @@ Class Constructor
 
 namespace tflite{
 
+enum class UnitType{
+  NONE,
+  CPU0,
+  CPU1,
+  CPU2,
+  CPU3,
+  GPU0,
+  GPU1,
+  GPU2,
+  GPU3
+};
 
 class Unit 
 {   
@@ -58,7 +69,9 @@ class Unit
         virtual Interpreter* GetInterpreter() = 0;
         virtual TfLiteStatus Invoke() = 0;
         virtual void SetInput(std::vector<cv::Mat> input_) = 0;
+        virtual UnitType GetType() = 0;
 
+        tflite::UnitType eType;
         std::vector<cv::Mat> input;
         std::thread myThread;
         std::unique_ptr<tflite::Interpreter> interpreter;
@@ -70,12 +83,14 @@ class UnitCPU : public Unit
 {
     public:
         UnitCPU();
-        UnitCPU(const char* name_, std::unique_ptr<tflite::Interpreter>* interpreter);
+        UnitCPU(tflite::UnitType eType_, std::unique_ptr<tflite::Interpreter>* interpreter);
         ~UnitCPU() {};
         TfLiteStatus Invoke();
         Interpreter* GetInterpreter();
+        UnitType GetType();
         void SetInput(std::vector<cv::Mat> input_);
-        
+
+        tflite::UnitType eType;
         std::vector<cv::Mat> input;
         std::thread myThread;
         std::unique_ptr<tflite::Interpreter>* interpreterCPU;
@@ -88,12 +103,14 @@ class UnitGPU : public Unit
 {
     public:
         UnitGPU();
-        UnitGPU(const char* name, std::unique_ptr<tflite::Interpreter>* interpreter);
+        UnitGPU(tflite::UnitType eType_, std::unique_ptr<tflite::Interpreter>* interpreter);
         ~UnitGPU() {};
         TfLiteStatus Invoke();
         Interpreter* GetInterpreter();
+        UnitType GetType();
         void SetInput(std::vector<cv::Mat> input_);
 
+        tflite::UnitType eType;
         std::vector<cv::Mat> input;
         std::thread myThread;
         std::unique_ptr<tflite::Interpreter>* interpreterGPU;

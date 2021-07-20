@@ -8,9 +8,8 @@ namespace tflite
 // UnitCPU
 UnitCPU::UnitCPU() : name("NONE"), interpreterCPU(nullptr){}
 
-UnitCPU::UnitCPU(const char* name_, std::unique_ptr<tflite::Interpreter>* interpreter) 
-            : name(name_), interpreterCPU(std::move(interpreter)) {}
-
+UnitCPU::UnitCPU(tflite::UnitType eType_, std::unique_ptr<tflite::Interpreter>* interpreter) 
+            : eType(eType_), interpreterCPU(std::move(interpreter)) {}
 
 TfLiteStatus UnitCPU::Invoke() { 
     for(int o_loop=0; o_loop<OUT_SEQ; o_loop++){
@@ -19,7 +18,6 @@ TfLiteStatus UnitCPU::Invoke() {
             std::cout << "CPU" << k + o_loop*SEQ << "\n";
             for (int i=0; i<Image_x; i++){
                 for (int j=0; j<Image_y; j++){
-                    //std::cout << "xy : " << i*28 + j << " : "<< ((float)input[k].at<uchar>(i, j)/255.0) <<"\n";
                     interpreterCPU->get()->typed_input_tensor<float>(0)[i*28 + j] = \
                      ((float)input[k].at<uchar>(i, j)/255.0);            
                 }
@@ -27,7 +25,6 @@ TfLiteStatus UnitCPU::Invoke() {
             // Run inference
             TFLITE_MINIMAL_CHECK(interpreterCPU->get()->Invoke() == kTfLiteOk);
         }
-        //mtx_lock.unlock();
     }
     std::cout << "[CPU] Job Done" << "\n"; 
     return kTfLiteOk;
@@ -39,14 +36,15 @@ void UnitCPU::SetInput(std::vector<cv::Mat> input_){
     input = input_;
 }
 
-
-
+tflite::UnitType UnitCPU::GetType(){
+    return eType;
+}
 
 // UnitGPU
 UnitGPU::UnitGPU() : name("NONE"), interpreterGPU(nullptr){}
 
-UnitGPU::UnitGPU(const char* name_, std::unique_ptr<tflite::Interpreter>* interpreter) 
-            : name(name_), interpreterGPU(std::move(interpreter)) {}
+UnitGPU::UnitGPU(tflite::UnitType eType_, std::unique_ptr<tflite::Interpreter>* interpreter) 
+            : eType(eType_), interpreterGPU(std::move(interpreter)) {}
 
 TfLiteStatus UnitGPU::Invoke() {
     std::cout << "Starting GPU Job" << "\n";
@@ -73,6 +71,10 @@ Interpreter* UnitGPU::GetInterpreter(){return interpreterGPU->get();}
 
 void UnitGPU::SetInput(std::vector<cv::Mat> input_){
     input = input_;
+}
+
+tflite::UnitType UnitGPU::GetType(){
+    return eType;
 }
 
 } // End of namespace tflite

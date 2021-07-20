@@ -26,7 +26,7 @@ UnitHandler::UnitHandler(const char* filename)
     }
 }
 
-TfLiteStatus UnitHandler::CreateUnitCPU(const char* name, std::vector<cv::Mat> input){
+TfLiteStatus UnitHandler::CreateUnitCPU(tflite::UnitType eType, std::vector<cv::Mat> input){
     if(builder_ == nullptr){
         PrintMsg("InterpreterBuilder nullptr ERROR");
         return kTfLiteError;
@@ -38,7 +38,7 @@ TfLiteStatus UnitHandler::CreateUnitCPU(const char* name, std::vector<cv::Mat> i
     TFLITE_MINIMAL_CHECK(interpreter->get()->AllocateTensors() == kTfLiteOk);
     
     UnitCPU* temp;
-    temp = new UnitCPU(name, std::move(interpreter));
+    temp = new UnitCPU(eType, std::move(interpreter));
     temp->SetInput(input);
     vUnitContainer.push_back(temp);
     iUnitCount++;    
@@ -46,7 +46,22 @@ TfLiteStatus UnitHandler::CreateUnitCPU(const char* name, std::vector<cv::Mat> i
     return kTfLiteOk;
 }
 
-TfLiteStatus UnitHandler::CreateUnitGPU(const char* name, std::vector<cv::Mat> input){
+TfLiteStatus UnitHandler::CreateUnitCPUandInvoke(tflite::UnitType eType, std::vector<cv::Mat> input){
+    if (CreateUnitCPU(eType, input) != kTfLiteOk){
+        PrintMsg("CreateUnitCPUError");
+        return kTfLiteError;
+    }
+    std::vector<Unit*>::iterator iter;
+    for(iter = vUnitContainer.begin(); iter != vUnitContainer.end(); ++iter){
+        if((*iter)->GetType() == UnitType::CPU0){
+            if((*iter)->Invoke() != kTfLiteOk){
+                return kTfLiteError;
+        }
+    }
+    return kTfLiteOk;
+}
+
+TfLiteStatus UnitHandler::CreateUnitGPU(tflite::UnitType eType, std::vector<cv::Mat> input){
     if(builder_ == nullptr){
         PrintMsg("InterpreterBuilder nullptr ERROR");
         return kTfLiteError;
@@ -70,12 +85,26 @@ TfLiteStatus UnitHandler::CreateUnitGPU(const char* name, std::vector<cv::Mat> i
     }
     TFLITE_MINIMAL_CHECK(interpreter->get()->AllocateTensors() == kTfLiteOk);
     UnitGPU* temp;
-    temp = new UnitGPU(name, std::move(interpreter));
+    temp = new UnitGPU(eType, std::move(interpreter));
     temp->SetInput(input);
     vUnitContainer.push_back(temp);
     iUnitCount++;
     PrintMsg("Build GPU Interpreter");
     return kTfLiteOk;
+}
+
+TfLiteStatus UnitHandler::CreateUnitGPUandInvoke(tflite::UnitType eType, std::vector<cv::Mat> input){
+    if (CreateUnitCPU(eType, input) != kTfLiteOk){
+        PrintMsg("CreateUnitCPUError");
+        return kTfLiteError;
+    }
+    std::vector<Unit*>::iterator iter;
+    for(iter = vUnitContainer.begin(); iter != vUnitContainer.end(); ++iter){
+        if((*iter)->GetType() == UnitType::CPU0){
+            if((*iter)->Invoke() != kTfLiteOk){
+                return kTfLiteError;
+        }
+    }
 }
 
 void UnitHandler::PrintMsg(const char* msg){
@@ -86,19 +115,19 @@ void UnitHandler::PrintMsg(const char* msg){
 void UnitHandler::PrintInterpreterStatus(){
     std::vector<Unit*>::iterator iter;
     for(iter = vUnitContainer.begin(); iter != vUnitContainer.end(); ++iter){
-            std::cout << "Device ====== "<< (*iter)->name << " ======\n";
-            PrintInterpreterState((*iter)->GetInterpreter());
-        }
+        //std::cout << "Device ====== " << (*iter)->eType << " ======\n";
+        PrintInterpreterState((*iter)->GetInterpreter());
+    }
     return;
 }
 
 TfLiteStatus UnitHandler::Invoke(){
     PrintMsg("Invoke");
     std::vector<Unit*>::iterator iter;
-    
     for(iter = vUnitContainer.begin(); iter != vUnitContainer.end(); ++iter){
         (*iter)->myThread = std::thread(&Unit::Invoke, (*iter));
     }
-    
 }
+
+
 } // End of namespace tflite

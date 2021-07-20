@@ -93,9 +93,10 @@ int main(int argc, char* argv[])
     }
     
     //Uhandler.PrintInterpreterStatus();
-    
+    /*
     if(Uhandler.Invoke() != kTfLiteOk){
         std::cout << "Invoke Error" << "\n";
         return 1;
     }
+	*/
 }

@@ -36,9 +36,12 @@ class UnitHandler
         UnitHandler();
         UnitHandler(const char* filename);
 
-        TfLiteStatus CreateUnitCPU(const char* name, std::vector<cv::Mat> input);
-        TfLiteStatus CreateUnitGPU(const char* name, std::vector<cv::Mat> input);
+        TfLiteStatus CreateUnitCPU(tflite::UnitType eType, std::vector<cv::Mat> input);
+        TfLiteStatus CreateUnitGPU(tflite::UnitType eType, std::vector<cv::Mat> input);
         TfLiteStatus Invoke();
+
+        TfLiteStatus CreateUnitGPUandInvoke(tflite::UnitType eType, std::vector<cv::Mat> input); 
+        TfLiteStatus CreateUnitCPUandInvoke(tflite::UnitType eType, std::vector<cv::Mat> input); 
 
         void PrintInterpreterStatus();
         void PrintMsg(const char* msg);
