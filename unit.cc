@@ -36,7 +36,7 @@ void UnitCPU::SetInput(std::vector<cv::Mat> input_){
     input = input_;
 }
 
-tflite::UnitType UnitCPU::GetType(){
+tflite::UnitType UnitCPU::GetUnitType(){
     return eType;
 }
 
@@ -73,7 +73,7 @@ void UnitGPU::SetInput(std::vector<cv::Mat> input_){
     input = input_;
 }
 
-tflite::UnitType UnitGPU::GetType(){
+tflite::UnitType UnitGPU::GetUnitType(){
     return eType;
 }
 

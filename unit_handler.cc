@@ -14,7 +14,8 @@ UnitHandler::UnitHandler(const char* filename)
     std::cout << "You have " << std::thread::hardware_concurrency() << " Processors " << "\n";
     vUnitContainer.reserve(10);
     std::unique_ptr<tflite::FlatBufferModel>* model;
-    model = new std::unique_ptr<tflite::FlatBufferModel>(tflite::FlatBufferModel::BuildFromFile(filename));
+    model = new std::unique_ptr<tflite::FlatBufferModel>\
+    (tflite::FlatBufferModel::BuildFromFile(filename));
     TFLITE_MINIMAL_CHECK(model != nullptr);
     // Build the interpreter with the InterpreterBuilder.
     tflite::ops::builtin::BuiltinOpResolver* resolver;
@@ -26,7 +27,8 @@ UnitHandler::UnitHandler(const char* filename)
     }
 }
 
-TfLiteStatus UnitHandler::CreateUnitCPU(tflite::UnitType eType, std::vector<cv::Mat> input){
+TfLiteStatus UnitHandler::CreateUnitCPU(tflite::UnitType eType,
+                                         std::vector<cv::Mat> input){
     if(builder_ == nullptr){
         PrintMsg("InterpreterBuilder nullptr ERROR");
         return kTfLiteError;
@@ -46,22 +48,26 @@ TfLiteStatus UnitHandler::CreateUnitCPU(tflite::UnitType eType, std::vector<cv::
     return kTfLiteOk;
 }
 
-TfLiteStatus UnitHandler::CreateUnitCPUandInvoke(tflite::UnitType eType, std::vector<cv::Mat> input){
+TfLiteStatus UnitHandler::CreateAndInvokeCPU(tflite::UnitType eType,
+                                             std::vector<cv::Mat> input){ 
+    mtx_lock.lock();
     if (CreateUnitCPU(eType, input) != kTfLiteOk){
         PrintMsg("CreateUnitCPUError");
         return kTfLiteError;
     }
+    mtx_lock.unlock();
     std::vector<Unit*>::iterator iter;
     for(iter = vUnitContainer.begin(); iter != vUnitContainer.end(); ++iter){
-        if((*iter)->GetType() == UnitType::CPU0){
-            if((*iter)->Invoke() != kTfLiteOk){
+        if((*iter)->GetUnitType() == eType){
+            if((*iter)->Invoke() != kTfLiteOk)
                 return kTfLiteError;
         }
     }
     return kTfLiteOk;
 }
 
-TfLiteStatus UnitHandler::CreateUnitGPU(tflite::UnitType eType, std::vector<cv::Mat> input){
+TfLiteStatus UnitHandler::CreateUnitGPU(tflite::UnitType eType,
+                                         std::vector<cv::Mat> input){
     if(builder_ == nullptr){
         PrintMsg("InterpreterBuilder nullptr ERROR");
         return kTfLiteError;
@@ -93,18 +99,23 @@ TfLiteStatus UnitHandler::CreateUnitGPU(tflite::UnitType eType, std::vector<cv::
     return kTfLiteOk;
 }
 
-TfLiteStatus UnitHandler::CreateUnitGPUandInvoke(tflite::UnitType eType, std::vector<cv::Mat> input){
-    if (CreateUnitCPU(eType, input) != kTfLiteOk){
+
+TfLiteStatus UnitHandler::CreateAndInvokeGPU(tflite::UnitType eType,
+                                             std::vector<cv::Mat> input){
+    mtx_lock.lock();
+    if (CreateUnitGPU(eType, input) != kTfLiteOk){
         PrintMsg("CreateUnitCPUError");
         return kTfLiteError;
     }
+    mtx_lock.unlock();
     std::vector<Unit*>::iterator iter;
     for(iter = vUnitContainer.begin(); iter != vUnitContainer.end(); ++iter){
-        if((*iter)->GetType() == UnitType::CPU0){
-            if((*iter)->Invoke() != kTfLiteOk){
-                return kTfLiteError;
+        if((*iter)->GetUnitType() == eType){
+           if((*iter)->Invoke() != kTfLiteOk)
+               return kTfLiteError;
         }
     }
+    return kTfLiteOk;
 }
 
 void UnitHandler::PrintMsg(const char* msg){
@@ -121,12 +132,17 @@ void UnitHandler::PrintInterpreterStatus(){
     return;
 }
 
-TfLiteStatus UnitHandler::Invoke(){
+TfLiteStatus UnitHandler::Invoke(tflite::UnitType eType, tflite::UnitType eType_,
+                                 std::vector<cv::Mat> input){
     PrintMsg("Invoke");
-    std::vector<Unit*>::iterator iter;
-    for(iter = vUnitContainer.begin(); iter != vUnitContainer.end(); ++iter){
-        (*iter)->myThread = std::thread(&Unit::Invoke, (*iter));
-    }
+    std::thread cpu;
+    std::thread gpu;
+    cpu = std::thread(&UnitHandler::CreateAndInvokeCPU, this, eType, input);
+    gpu = std::thread(&UnitHandler::CreateAndInvokeGPU, this, eType_, input);
+
+    cpu.join();
+    gpu.join();
+
 }
 
 

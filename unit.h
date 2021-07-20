@@ -18,8 +18,8 @@
 #define Image_x 28
 #define Image_y 28
 #define Image_ch 1
-#define SEQ 10000
-#define OUT_SEQ 100
+#define SEQ 1
+#define OUT_SEQ 1
 
 extern std::mutex mtx_lock;
 
@@ -69,7 +69,7 @@ class Unit
         virtual Interpreter* GetInterpreter() = 0;
         virtual TfLiteStatus Invoke() = 0;
         virtual void SetInput(std::vector<cv::Mat> input_) = 0;
-        virtual UnitType GetType() = 0;
+        virtual UnitType GetUnitType() = 0;
 
         tflite::UnitType eType;
         std::vector<cv::Mat> input;
@@ -87,7 +87,7 @@ class UnitCPU : public Unit
         ~UnitCPU() {};
         TfLiteStatus Invoke();
         Interpreter* GetInterpreter();
-        UnitType GetType();
+        UnitType GetUnitType();
         void SetInput(std::vector<cv::Mat> input_);
 
         tflite::UnitType eType;
@@ -107,7 +107,7 @@ class UnitGPU : public Unit
         ~UnitGPU() {};
         TfLiteStatus Invoke();
         Interpreter* GetInterpreter();
-        UnitType GetType();
+        UnitType GetUnitType();
         void SetInput(std::vector<cv::Mat> input_);
 
         tflite::UnitType eType;

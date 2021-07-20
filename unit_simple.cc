@@ -73,27 +73,31 @@ int main(int argc, char* argv[])
 
     const char* filename = argv[1];
     
-	vector<cv::Mat> vCPU;
-	vector<cv::Mat> vGPU;
-    read_Mnist("train-images-idx3-ubyte", vCPU);
-	vGPU = vCPU;
+	vector<cv::Mat> input;
+    read_Mnist("train-images-idx3-ubyte", input);
     vector<unsigned char> arr;
 	read_Mnist_Label("train-labels-idx1-ubyte", arr);
 
 	tflite::UnitHandler Uhandler(filename);
     
-    if(Uhandler.CreateUnitCPU("CPU1", vCPU) != kTfLiteOk){
+	if (Uhandler.Invoke(tflite::UnitType::CPU0, tflite::UnitType::GPU0, input) != kTfLiteOk){
+		Uhandler.PrintMsg("Invoke Returned Error");
+		exit(1);
+	}
+	Uhandler.PrintInterpreterStatus();
+	
+	/*
+    if(Uhandler.CreateUnitCPU(tflite::UnitType::CPU0, vCPU) != kTfLiteOk){
         std::cout << "Cannot Create UnitCPU" << "\n";
         return 1;
     }
 	
-    if(Uhandler.CreateUnitGPU("GPU1", vGPU) != kTfLiteOk){
+    if(Uhandler.CreateUnitGPU(tflite::UnitType::GPU0, vGPU) != kTfLiteOk){
         std::cout << "Cannot Create UnitGPU" << "\n";
         return 1;
     }
     
-    //Uhandler.PrintInterpreterStatus();
-    /*
+    
     if(Uhandler.Invoke() != kTfLiteOk){
         std::cout << "Invoke Error" << "\n";
         return 1;

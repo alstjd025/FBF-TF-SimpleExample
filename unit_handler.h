@@ -38,10 +38,10 @@ class UnitHandler
 
         TfLiteStatus CreateUnitCPU(tflite::UnitType eType, std::vector<cv::Mat> input);
         TfLiteStatus CreateUnitGPU(tflite::UnitType eType, std::vector<cv::Mat> input);
-        TfLiteStatus Invoke();
+        TfLiteStatus Invoke(tflite::UnitType eType, tflite::UnitType eType_, std::vector<cv::Mat> input);
 
-        TfLiteStatus CreateUnitGPUandInvoke(tflite::UnitType eType, std::vector<cv::Mat> input); 
-        TfLiteStatus CreateUnitCPUandInvoke(tflite::UnitType eType, std::vector<cv::Mat> input); 
+        TfLiteStatus CreateAndInvokeCPU(tflite::UnitType eType, std::vector<cv::Mat> input);
+        TfLiteStatus CreateAndInvokeGPU(tflite::UnitType eType, std::vector<cv::Mat> input);
 
         void PrintInterpreterStatus();
         void PrintMsg(const char* msg);
@@ -51,3 +51,4 @@ class UnitHandler
 };
 
 } //End of Namespace tflite
+
