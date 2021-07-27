@@ -48,7 +48,7 @@ class UnitHandler
         TfLiteStatus CreateAndInvokeGPU(tflite::UnitType eType, std::vector<cv::Mat> input);
 
         TfLiteStatus ContextHandler(tflite::UnitType eType, TfLiteContext* context);
-        TfLiteStatus ConcatContext(TfLiteContext* context, sharedContext* slaveData);
+        TfLiteStatus ConcatContext(TfLiteContext* context, sharedContext* PopedData);
 
         TfLiteStatus PushTensorContextToQueue(sharedContext* slaveData);
         sharedContext* PopTensorContextFromQueue();

@@ -23,7 +23,9 @@ TfLiteStatus UnitCPU::Invoke() {
                 }
             } 
             // Run inference
-            TFLITE_MINIMAL_CHECK(interpreterCPU->get()->Invoke() == kTfLiteOk);
+            if(interpreterCPU->get()->Invoke(UnitHandler::ContextHandler) != kTfLiteOk){
+                return kTfLiteError;
+            }
         }
     }
     std::cout << "[CPU] Job Done" << "\n"; 
@@ -60,7 +62,9 @@ TfLiteStatus UnitGPU::Invoke() {
                 std::cout <<"\n";
             }
             // Run inference
-            TFLITE_MINIMAL_CHECK(interpreterGPU->get()->Invoke() == kTfLiteOk);
+            if(interpreterGPU->get()->Invoke(ContextHandlerPointer) != kTfLiteOk){
+                return kTfLiteError;
+            }
         }
         //mtx_lock.unlock();
     }

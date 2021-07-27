@@ -95,6 +95,7 @@ TfLiteStatus UnitHandler::CreateUnitGPU(tflite::UnitType eType,
     UnitGPU* temp;
     temp = new UnitGPU(eType, std::move(interpreter));
     temp->SetInput(input);
+    //Set ContextHandler Pointer
     vUnitContainer.push_back(temp);
     iUnitCount++;
     PrintMsg("Build GPU Interpreter");
@@ -152,10 +153,18 @@ TfLiteStatus UnitHandler::Invoke(tflite::UnitType eType, tflite::UnitType eType_
 TfLiteStatus UnitHandler::ContextHandler(tflite::UnitType eType, TfLiteContext* context){
     if(eType != UnitType::CPU0){
         sharedContext* slaveData = CreateSharedContext(eType, context);
-        PushTensorContextToQueue(slaveData);
+        if(PushTensorContextToQueue(slaveData) != kTfLiteOk){
+            PrintMsg("Context Pushing Error");
+            return kTfLiteError;
+        }
+        return kTfLiteOk;
     }
     else{
-        
+        if(ConcatContext(context, PopTensorContextFromQueue()) != kTfLiteOk){
+            PrintMsg("Context Concat Error");
+            return kTfLiteError;
+        }
+        return kTfLiteOk;
     }
 }
 
@@ -163,8 +172,10 @@ sharedContext* UnitHandler::CreateSharedContext(tflite::UnitType eType, TfLiteCo
     return new sharedContext{context, eType};
 }
 
-TfLiteStatus UnitHandler::ConcatContext(TfLiteContext* context, sharedContext* slaveData){
-    
+TfLiteStatus UnitHandler::ConcatContext(TfLiteContext* context, sharedContext* PopedData){
+    //Concate original context and PopedData
+    //Concat info initiallizing function needs to be implemented Later
+    return kTfLiteOk;
 }
 
 TfLiteStatus UnitHandler::PushTensorContextToQueue(sharedContext* slaveData){
@@ -179,10 +190,13 @@ TfLiteStatus UnitHandler::PushTensorContextToQueue(sharedContext* slaveData){
 }
 
 sharedContext* UnitHandler::PopTensorContextFromQueue(){
-    mtx_lock.lock();
-    sharedContext* temp = qSharedData->front();
-    qSharedData->pop();
-    mtx_lock.unlock();
+    sharedContext* temp;
+    while(!qSharedData->empty()){
+        mtx_lock.lock();
+        temp = qSharedData->front();
+        qSharedData->pop();
+        mtx_lock.unlock();
+    }
     return temp;
 }
 
