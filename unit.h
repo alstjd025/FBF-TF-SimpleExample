@@ -4,6 +4,7 @@
 #include <fstream>
 #include <cstdarg>
 #include <string>
+#include <queue>
 #include "opencv2/opencv.hpp"
 #include "tensorflow/lite/interpreter.h"
 #include "tensorflow/lite/kernels/register.h"
@@ -50,6 +51,11 @@ Class Constructor
 */
 
 namespace tflite{
+
+typedef struct sharedContext{
+    TfLiteContext* Context;
+    tflite::UnitType eType;
+} sharedContext;
 
 enum class UnitType{
   NONE,

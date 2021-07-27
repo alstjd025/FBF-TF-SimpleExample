@@ -22,16 +22,20 @@ Unit handler class
 */
 namespace tflite
 {
+
+
 class UnitHandler
 {
     private:
         std::vector<Unit*> vUnitContainer;
+        std::queue<sharedContext*>* qSharedData;
         tflite::InterpreterBuilder* builder_;
         int iUnitCount; 
         int numThreads;
         std::vector<cv::Mat> inputData;
         const char* fileName;
         std::vector<std::function<void>*> workers;
+        
     public:
         UnitHandler();
         UnitHandler(const char* filename);
@@ -42,6 +46,15 @@ class UnitHandler
 
         TfLiteStatus CreateAndInvokeCPU(tflite::UnitType eType, std::vector<cv::Mat> input);
         TfLiteStatus CreateAndInvokeGPU(tflite::UnitType eType, std::vector<cv::Mat> input);
+
+        TfLiteStatus ContextHandler(tflite::UnitType eType, TfLiteContext* context);
+        TfLiteStatus ConcatContext(TfLiteContext* context, sharedContext* slaveData);
+
+        TfLiteStatus PushTensorContextToQueue(sharedContext* slaveData);
+        sharedContext* PopTensorContextFromQueue();
+        sharedContext* CreateSharedContext(tflite::UnitType eType, TfLiteContext* context);
+
+        void DeleteSharedContext(sharedContext* dataTobeCleared);
 
         void PrintInterpreterStatus();
         void PrintMsg(const char* msg);

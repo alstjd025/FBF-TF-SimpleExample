@@ -84,6 +84,7 @@ int main(int argc, char* argv[])
 		Uhandler.PrintMsg("Invoke Returned Error");
 		exit(1);
 	}
+	Uhandler.PrintMsg("Interpreter Post Invoke State");
 	Uhandler.PrintInterpreterStatus();
 	
 	/*

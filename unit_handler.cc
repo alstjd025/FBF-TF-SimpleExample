@@ -83,6 +83,8 @@ TfLiteStatus UnitHandler::CreateUnitGPU(tflite::UnitType eType,
         .inference_priority1 = TFLITE_GPU_INFERENCE_PRIORITY_MIN_LATENCY,
         .inference_priority2 = TFLITE_GPU_INFERENCE_PRIORITY_AUTO,
         .inference_priority3 = TFLITE_GPU_INFERENCE_PRIORITY_AUTO,
+        .experimental_flags = 4,
+        .max_delegated_partitions = 30,
     };
     MyDelegate = TfLiteGpuDelegateV2Create(&options);
     if(interpreter->get()->ModifyGraphWithDelegate(MyDelegate) != kTfLiteOk) {
@@ -96,6 +98,8 @@ TfLiteStatus UnitHandler::CreateUnitGPU(tflite::UnitType eType,
     vUnitContainer.push_back(temp);
     iUnitCount++;
     PrintMsg("Build GPU Interpreter");
+    PrintMsg("GPU Interpreter Pre Invoke State");
+    tflite::PrintInterpreterState(interpreter->get());
     return kTfLiteOk;
 }
 
@@ -135,15 +139,54 @@ void UnitHandler::PrintInterpreterStatus(){
 TfLiteStatus UnitHandler::Invoke(tflite::UnitType eType, tflite::UnitType eType_,
                                  std::vector<cv::Mat> input){
     PrintMsg("Invoke");
-    std::thread cpu;
+    //std::thread cpu;
     std::thread gpu;
-    cpu = std::thread(&UnitHandler::CreateAndInvokeCPU, this, eType, input);
+    //cpu = std::thread(&UnitHandler::CreateAndInvokeCPU, this, eType, input);
     gpu = std::thread(&UnitHandler::CreateAndInvokeGPU, this, eType_, input);
 
-    cpu.join();
+    //cpu.join();
     gpu.join();
 
 }
+
+TfLiteStatus UnitHandler::ContextHandler(tflite::UnitType eType, TfLiteContext* context){
+    if(eType != UnitType::CPU0){
+        sharedContext* slaveData = CreateSharedContext(eType, context);
+        PushTensorContextToQueue(slaveData);
+    }
+    else{
+        
+    }
+}
+
+sharedContext* UnitHandler::CreateSharedContext(tflite::UnitType eType, TfLiteContext* context){
+    return new sharedContext{context, eType};
+}
+
+TfLiteStatus UnitHandler::ConcatContext(TfLiteContext* context, sharedContext* slaveData){
+    
+}
+
+TfLiteStatus UnitHandler::PushTensorContextToQueue(sharedContext* slaveData){
+    if(slaveData != nullptr){
+        mtx_lock.lock();
+        qSharedData->push(slaveData);
+        mtx_lock.unlock();
+        return kTfLiteOk;
+    }
+    PrintMsg("SlaveData Error");
+    return kTfLiteError;
+}
+
+sharedContext* UnitHandler::PopTensorContextFromQueue(){
+    mtx_lock.lock();
+    sharedContext* temp = qSharedData->front();
+    qSharedData->pop();
+    mtx_lock.unlock();
+    return temp;
+}
+
+
 
 
 } // End of namespace tflite
