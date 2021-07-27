@@ -23,7 +23,7 @@ TfLiteStatus UnitCPU::Invoke() {
                 }
             } 
             // Run inference
-            if(interpreterCPU->get()->Invoke(UnitHandler::ContextHandler) != kTfLiteOk){
+            if(interpreterCPU->get()->Invoke() != kTfLiteOk){
                 return kTfLiteError;
             }
         }
@@ -62,7 +62,7 @@ TfLiteStatus UnitGPU::Invoke() {
                 std::cout <<"\n";
             }
             // Run inference
-            if(interpreterGPU->get()->Invoke(ContextHandlerPointer) != kTfLiteOk){
+            if(interpreterGPU->get()->Invoke() != kTfLiteOk){
                 return kTfLiteError;
             }
         }

@@ -1,4 +1,4 @@
-#include "unit_handler.h"
+#include "tensorflow/lite/unit_handler.h"
 
 using namespace cv;
 using namespace std;
@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
 
 	tflite::UnitHandler Uhandler(filename);
     
-	if (Uhandler.Invoke(tflite::UnitType::CPU0, tflite::UnitType::GPU0, input) != kTfLiteOk){
+	if (Uhandler.Invoke(UnitType::CPU0, UnitType::GPU0, input) != kTfLiteOk){
 		Uhandler.PrintMsg("Invoke Returned Error");
 		exit(1);
 	}
