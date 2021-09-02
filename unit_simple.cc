@@ -16,14 +16,14 @@ void read_Mnist(string filename, vector<cv::Mat>& vec) {
 	ifstream file(filename, ios::binary);
 	if (file.is_open()){
 		int magic_number = 0;
-		int number_of_images = 0;
+		int number_of_images = 1;
 		int n_rows = 0;
 		int n_cols = 0;
 		file.read((char*)& magic_number, sizeof(magic_number));
 		magic_number = ReverseInt(magic_number);
 		file.read((char*)& number_of_images, sizeof(number_of_images));
 		//number_of_images = ReverseInt(number_of_images);
-		number_of_images = SEQ; 
+		number_of_images = 1;
         file.read((char*)& n_rows, sizeof(n_rows));
 		n_rows = ReverseInt(n_rows);
 		file.read((char*)& n_cols, sizeof(n_cols));
@@ -84,9 +84,6 @@ int main(int argc, char* argv[])
 		Uhandler.PrintMsg("Invoke Returned Error");
 		exit(1);
 	}
-	Uhandler.PrintMsg("Interpreter Post Invoke State");
-	Uhandler.PrintInterpreterStatus();
-	
 	/*
     if(Uhandler.CreateUnitCPU(tflite::UnitType::CPU0, vCPU) != kTfLiteOk){
         std::cout << "Cannot Create UnitCPU" << "\n";
