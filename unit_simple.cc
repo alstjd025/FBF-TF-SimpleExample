@@ -1,6 +1,6 @@
 #include "tensorflow/lite/unit_handler.h"
 #define SEQ 10000
-#define OUT_SEQ 1
+#define OUT_SEQ 10 
 
 using namespace cv;
 using namespace std;
