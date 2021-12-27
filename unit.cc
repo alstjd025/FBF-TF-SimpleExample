@@ -23,7 +23,9 @@ TfLiteStatus UnitCPU::Invoke() {
                 }
             } 
             // Run inference
-            TFLITE_MINIMAL_CHECK(interpreterCPU->get()->Invoke() == kTfLiteOk);
+            if(interpreterCPU->get()->Invoke() != kTfLiteOk){
+                return kTfLiteError;
+            }
         }
     }
     std::cout << "[CPU] Job Done" << "\n"; 
@@ -54,16 +56,23 @@ TfLiteStatus UnitGPU::Invoke() {
             std::cout << "GPU" << k + o_loop*SEQ << "\n";
             for (int i=0; i<Image_x; i++){
                 for ( int j=0; j<Image_y; j++){
-                    interpreterGPU->get()->typed_input_tensor<float>(0)[i*28 + j] = \
-                    ((float)input[k].at<uchar>(i, j)/255.0);            
+                    interpreterGPU->get()->typed_input_tensor<float>(0)[i*28 + j] = ((float)input[k].at<uchar>(i, j)/255.0);            
+                    printf("%.4f ", ((float)input[k].at<uchar>(i, j)/255.0));
                 }
+                std::cout <<"\n";
             }
             // Run inference
-            TFLITE_MINIMAL_CHECK(interpreterGPU->get()->Invoke() == kTfLiteOk);
+            if(interpreterGPU->get()->Invoke() != kTfLiteOk){
+                return kTfLiteError;
+            }
         }
         //mtx_lock.unlock();
     }
     std::cout << "[GPU] Job Done" << "\n";
+    for (int i =0; i<10; i++){
+        printf("%0.4f", interpreterGPU->get()->typed_output_tensor<float>(0)[i] );
+    }
+    std::cout << "\n";
     return kTfLiteOk;
 }
 

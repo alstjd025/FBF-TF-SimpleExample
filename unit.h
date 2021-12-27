@@ -4,6 +4,8 @@
 #include <fstream>
 #include <cstdarg>
 #include <string>
+#include <queue>
+#include <functional>
 #include "opencv2/opencv.hpp"
 #include "tensorflow/lite/interpreter.h"
 #include "tensorflow/lite/kernels/register.h"
@@ -11,6 +13,7 @@
 #include "tensorflow/lite/optional_debug_tools.h"
 #include "tensorflow/lite/delegates/gpu/delegate.h"
 #include "tensorflow/lite/c/common.h"
+#include "unit_handler.h"
 #include "mutex"
 #include "thread"
 #include "future"
@@ -51,17 +54,10 @@ Class Constructor
 
 namespace tflite{
 
-enum class UnitType{
-  NONE,
-  CPU0,
-  CPU1,
-  CPU2,
-  CPU3,
-  GPU0,
-  GPU1,
-  GPU2,
-  GPU3
-};
+typedef struct sharedContext{
+    TfLiteContext* Context;
+    tflite::UnitType eType;
+} sharedContext;
 
 class Unit 
 {   
@@ -76,6 +72,9 @@ class Unit
         std::thread myThread;
         std::unique_ptr<tflite::Interpreter> interpreter;
         std::string name;
+        
+        TfLiteStatus (UnitHandler::*ContextHandlerPointer)(tflite::UnitType, TfLiteContext*) =
+                                         &UnitHandler::ContextHandler;
 };
 
 //Unit Class for CPU
@@ -96,6 +95,9 @@ class UnitCPU : public Unit
         std::unique_ptr<tflite::Interpreter>* interpreterCPU;
         std::string name;
         double cpu_t;
+        
+        TfLiteStatus (UnitHandler::*ContextHandlerPointer)(tflite::UnitType, TfLiteContext*) =
+                                         &UnitHandler::ContextHandler;
 };
 
 //Unit Class for GPU
@@ -116,6 +118,9 @@ class UnitGPU : public Unit
         std::unique_ptr<tflite::Interpreter>* interpreterGPU;
         std::string name;
         double gpu_t;
+        
+        TfLiteStatus (UnitHandler::*ContextHandlerPointer)(tflite::UnitType, TfLiteContext*) =
+                                         &UnitHandler::ContextHandler;
 };
 
 } // End of namespace tflite
