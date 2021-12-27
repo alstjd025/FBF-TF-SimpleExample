@@ -1,9 +1,13 @@
 #include "tensorflow/lite/unit_handler.h"
-#define SEQ 10000
-#define OUT_SEQ 10 
+#define SEQ 1
+#define OUT_SEQ 1000
+#define catdog
 
 using namespace cv;
 using namespace std;
+
+
+#ifdef mnist
 int ReverseInt(int i)
 {
 	unsigned char ch1, ch2, ch3, ch4;
@@ -13,7 +17,9 @@ int ReverseInt(int i)
 	ch4 = (i >> 24) & 255;
 	return((int)ch1 << 24) + ((int)ch2 << 16) + ((int)ch3 << 8) + ch4;
 }
+/*
 
+*/
 void read_Mnist(string filename, vector<cv::Mat>& vec) {
 	ifstream file(filename, ios::binary);
 	if (file.is_open()){
@@ -64,6 +70,21 @@ void read_Mnist_Label(string filename, vector<unsigned char> &arr) {
         cout << "file open failed" << endl;
     }
 }
+#endif
+
+#ifdef catdog
+void read_image_opencv(string filename, vector<cv::Mat>& input){
+	cv::Mat cvimg = cv::imread(filename, cv::IMREAD_COLOR);
+	if(cvimg.data == NULL){
+		std::cout << "=== IMAGE DATA NULL ===\n";
+		return;
+	}
+	cv::cvtColor(cvimg, cvimg, COLOR_BGR2RGB);
+	cv::Mat cvimg_;
+	cv::resize(cvimg, cvimg_, cv::Size(300, 300)); //resize to 300x300
+	input.push_back(cvimg_);
+}
+#endif
 
 int main(int argc, char* argv[])
 {
@@ -75,9 +96,15 @@ int main(int argc, char* argv[])
     const char* filename = argv[1];
     
 	vector<cv::Mat> input;
-    read_Mnist("train-images-idx3-ubyte", input);
     vector<unsigned char> arr;
+	#ifdef mnist
+    read_Mnist("train-images-idx3-ubyte", input);
 	read_Mnist_Label("train-labels-idx1-ubyte", arr);
+	#endif
+
+	#ifdef catdog
+	read_image_opencv("cat.0.jpg", input);
+	#endif
 
 	tflite::UnitHandler Uhandler(filename);
     
