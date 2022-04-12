@@ -1,7 +1,7 @@
 #include "tensorflow/lite/unit_handler.h"
 #define SEQ 1
-#define OUT_SEQ 1000
-#define catdog
+#define OUT_SEQ 1
+#define mnist
 
 using namespace cv;
 using namespace std;
@@ -98,7 +98,9 @@ int main(int argc, char* argv[])
 	vector<cv::Mat> input;
     vector<unsigned char> arr;
 	#ifdef mnist
-    read_Mnist("train-images-idx3-ubyte", input);
+	std::cout << "Loading images \n";
+  read_Mnist("train-images-idx3-ubyte", input);
+	std::cout << "Loading Labels \n";
 	read_Mnist_Label("train-labels-idx1-ubyte", arr);
 	#endif
 
@@ -107,7 +109,7 @@ int main(int argc, char* argv[])
 	#endif
 
 	tflite::UnitHandler Uhandler(filename);
-    
+  std::cout << "Loading Mnist Image, Label Complete \n";
 	if (Uhandler.Invoke(UnitType::CPU0, UnitType::GPU0, input) != kTfLiteOk){
 		Uhandler.PrintMsg("Invoke Returned Error");
 		exit(1);
