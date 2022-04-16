@@ -92,9 +92,11 @@ int main(int argc, char* argv[])
 	const char* quantizedfilename;
 	bool bUseTwoModel = false;
 	if (argc == 2) {
+		std::cout << "Got One Model \n";
 		originalfilename = argv[1];
 	}
-	else if(argc == 3){
+	else if(argc > 2){
+		std::cout << "Got Two Model \n";
 		bUseTwoModel = true;
 		originalfilename = argv[1];
 		quantizedfilename = argv[2];
@@ -118,7 +120,7 @@ int main(int argc, char* argv[])
 	std::cout << "Loading Cat Image \n";
 	#endif
 
-	if(bUseTwoModel){
+	if(!bUseTwoModel){
 		tflite::UnitHandler Uhandler(originalfilename);
 		if (Uhandler.Invoke(UnitType::CPU0, UnitType::GPU0, input) != kTfLiteOk){
 			Uhandler.PrintMsg("Invoke Returned Error");
