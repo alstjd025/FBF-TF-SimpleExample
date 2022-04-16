@@ -118,15 +118,19 @@ int main(int argc, char* argv[])
 	std::cout << "Loading Cat Image \n";
 	#endif
 
-	if(bUseTwoModel)
+	if(bUseTwoModel){
 		tflite::UnitHandler Uhandler(originalfilename);
-	else	
+		if (Uhandler.Invoke(UnitType::CPU0, UnitType::GPU0, input) != kTfLiteOk){
+			Uhandler.PrintMsg("Invoke Returned Error");
+			exit(1);
+		}		
+	}
+	else{
 		tflite::UnitHandler Uhandler(originalfilename, quantizedfilename);
-  
-	
-	if (Uhandler.Invoke(UnitType::CPU0, UnitType::GPU0, input) != kTfLiteOk){
-		Uhandler.PrintMsg("Invoke Returned Error");
-		exit(1);
+		if (Uhandler.Invoke(UnitType::CPU0, UnitType::GPU0, input) != kTfLiteOk){
+			Uhandler.PrintMsg("Invoke Returned Error");
+			exit(1);
+		}
 	}
 	/*
     if(Uhandler.CreateUnitCPU(tflite::UnitType::CPU0, vCPU) != kTfLiteOk){
