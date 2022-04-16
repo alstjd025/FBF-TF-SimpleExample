@@ -88,28 +88,42 @@ void read_image_opencv(string filename, vector<cv::Mat>& input){
 
 int main(int argc, char* argv[])
 {
-    if (argc != 2) {
-        fprintf(stderr, "minimal <tflite model>\n");
-        return 1;
-    }
-
-    const char* filename = argv[1];
-    
+	const char* originalfilename;
+	const char* quantizedfilename;
+	bool bUseTwoModel = false;
+	if (argc == 2) {
+		originalfilename = argv[1];
+	}
+	else if(argc == 3){
+		bUseTwoModel = true;
+		originalfilename = argv[1];
+		quantizedfilename = argv[2];
+	}
+	else{
+			fprintf(stderr, "minimal <tflite model>\n");
+			return 1;
+	}
 	vector<cv::Mat> input;
-    vector<unsigned char> arr;
+	vector<unsigned char> arr;
 	#ifdef mnist
 	std::cout << "Loading images \n";
   read_Mnist("train-images-idx3-ubyte", input);
 	std::cout << "Loading Labels \n";
 	read_Mnist_Label("train-labels-idx1-ubyte", arr);
+	std::cout << "Loading Mnist Image, Label Complete \n";
 	#endif
 
 	#ifdef catdog
 	read_image_opencv("cat.0.jpg", input);
+	std::cout << "Loading Cat Image \n";
 	#endif
 
-	tflite::UnitHandler Uhandler(filename);
-  std::cout << "Loading Mnist Image, Label Complete \n";
+	if(bUseTwoModel)
+		tflite::UnitHandler Uhandler(originalfilename);
+	else	
+		tflite::UnitHandler Uhandler(originalfilename, quantizedfilename);
+  
+	
 	if (Uhandler.Invoke(UnitType::CPU0, UnitType::GPU0, input) != kTfLiteOk){
 		Uhandler.PrintMsg("Invoke Returned Error");
 		exit(1);
