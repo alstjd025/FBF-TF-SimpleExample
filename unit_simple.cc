@@ -1,7 +1,7 @@
 #include "tensorflow/lite/unit_handler.h"
 #define SEQ 1
 #define OUT_SEQ 1
-#define mnist
+#define mnist 
 
 using namespace cv;
 using namespace std;
