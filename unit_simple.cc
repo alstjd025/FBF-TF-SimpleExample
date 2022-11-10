@@ -1,5 +1,5 @@
 #include "tensorflow/lite/unit_handler.h"
-#define SEQ 1
+#define SEQ 10000
 #define OUT_SEQ 1
 #define mnist 
 
@@ -109,7 +109,7 @@ int main(int argc, char* argv[])
 	vector<unsigned char> arr;
 	#ifdef mnist
 	std::cout << "Loading images \n";
-  read_Mnist("train-images-idx3-ubyte", input);
+        read_Mnist("train-images-idx3-ubyte", input);
 	std::cout << "Loading Labels \n";
 	read_Mnist_Label("train-labels-idx1-ubyte", arr);
 	std::cout << "Loading Mnist Image, Label Complete \n";
