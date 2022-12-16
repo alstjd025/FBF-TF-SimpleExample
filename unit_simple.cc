@@ -1,5 +1,5 @@
 #include "tensorflow/lite/unit_handler.h"
-#define SEQ 10000
+#define SEQ 1
 #define OUT_SEQ 1
 #define mnist 
 
