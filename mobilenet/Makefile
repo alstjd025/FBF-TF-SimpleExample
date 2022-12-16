@@ -1,5 +1,5 @@
-unit_simple : unit_simple.cc
-	g++ -o unit_simple unit_simple.cc -I/usr/include/opencv4\
+mobilenet_bench : mobilenet_bench.cc
+	g++ -o mobilenet_bench mobilenet_bench.cc -I/usr/include/opencv4\
 		-pthread -g -I/home/xavier/FBF-TF\
 		-I/home/xavier/FBF-TF/tensorflow/lite/tools/make/downloads/flatbuffers/include\
 		-L/home/xavier/FBF-TF/tensorflow/lite/tools/make/gen/linux_aarch64/lib\
