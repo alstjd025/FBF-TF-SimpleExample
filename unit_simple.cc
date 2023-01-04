@@ -109,7 +109,7 @@ int main(int argc, char* argv[])
 	vector<unsigned char> arr;
 	#ifdef mnist
 	std::cout << "Loading images \n";
-  read_Mnist("train-images-idx3-ubyte", input);
+ 	read_Mnist("train-images-idx3-ubyte", input);
 	std::cout << "Loading Labels \n";
 	read_Mnist_Label("train-labels-idx1-ubyte", arr);
 	std::cout << "Loading Mnist Image, Label Complete \n";
@@ -123,14 +123,14 @@ int main(int argc, char* argv[])
 	if(!bUseTwoModel){
 		tflite::UnitHandler Uhandler(originalfilename);
 		if (Uhandler.Invoke(UnitType::CPU0, UnitType::GPU0, input) != kTfLiteOk){
-			Uhandler.PrintMsg("Invoke Returned Error");
+			Uhandler.PrintMsg("Invoke Returned");
 			exit(1);
 		}		
 	}
 	else{
 		tflite::UnitHandler Uhandler(originalfilename, quantizedfilename);
 		if (Uhandler.Invoke(UnitType::CPU0, UnitType::GPU0, input) != kTfLiteOk){
-			Uhandler.PrintMsg("Invoke Returned Error");
+			Uhandler.PrintMsg("Invoke Returned");
 			exit(1);
 		}
 	}

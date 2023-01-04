@@ -1,13 +1,17 @@
 #!/bin/bash
 
-UnitSimple="/home/xavier/FBF-TF-SimpleExample"
-TflitePath="../FBF-TF/tensorflow/lite/tools/make"
-Tensorflowpath="home/xavier/FBF-TF"
+UnitSimple="/home/odroid/FBF-TF-SimpleExample"
+TflitePath="../tensorflow/tensorflow/lite/tools/make"
+Tensorflowpath="home/odroid/tensorflow"
 
 
 echo "TfLite Unit_simple Test"
 
-. ${TflitePath}/build_aarch64_lib.sh
-touch unit_simple.cc
-make
+. ${TflitePath}/build_bbb_lib.sh
+
+echo "make Test Project"
+
+touch ${UnitSimple}/unit_simple.cc
+
+${UnitSimple}/ make
 
