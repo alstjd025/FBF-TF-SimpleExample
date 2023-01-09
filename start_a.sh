@@ -1,8 +1,8 @@
 #!/bin/bash
 
-UnitSimple="/home/xavier/FBF-TF-SimpleExample"
+UnitSimple="/home/nvidia/FBF-TF-SimpleExample"
 TflitePath="../FBF-TF/tensorflow/lite/tools/make"
-Tensorflowpath="home/xavier/FBF-TF"
+Tensorflowpath="home/nvidia/FBF-TF"
 
 
 echo "TfLite Unit_simple Test"

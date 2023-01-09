@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
 	vector<unsigned char> arr;
 
 	std::cout << "Loading imagenet Image \n";
-	read_image_opencv("/home/xavier/FBF-TF-SimpleExample/mobilenet/banana_0.jpg", input);
+	read_image_opencv("/home/nvidia/FBF-TF-SimpleExample/mobilenet/banana_0.jpg", input);
 
 	if(!bUseTwoModel){
 		tflite::UnitHandler Uhandler(originalfilename);

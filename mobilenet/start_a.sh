@@ -1,8 +1,8 @@
 #!/bin/bash
 
-mobilenet_bench="/home/xavier/FBF-TF-SimpleExample/mobilenet"
+mobilenet_bench="/home/nvidia/FBF-TF-SimpleExample/mobilenet"
 TflitePath="../../FBF-TF/tensorflow/lite/tools/make"
-Tensorflowpath="home/xavier/FBF-TF"
+Tensorflowpath="home/nvidia/FBF-TF"
 
 
 echo "TfLite mobilenet_bench Test"
