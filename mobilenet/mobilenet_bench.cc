@@ -15,9 +15,12 @@ void read_image_opencv(string filename, vector<cv::Mat>& input){
 	}
 	cv::cvtColor(cvimg, cvimg, COLOR_BGR2RGB);
 	cv::Mat cvimg_;
-	cv::resize(cvimg, cvimg_, cv::Size(224, 224), 0, 0, INTER_AREA); //resize to 224x224
+	cv::resize(cvimg, cvimg_, cv::Size(416, 416), 0, 0, INTER_AREA); //resize to 224x224
 	cvimg_.convertTo(cvimg_, CV_32FC3, 1 / 127.5f, -1);
 	input.push_back(cvimg_);
+	//size should be 224 224 for imagenet and mobilenet
+	//size should be 416 416 for yolov4
+	//size should be 300 300 for ssd-mobilenetv2-lite
 }
 
 
@@ -45,7 +48,7 @@ int main(int argc, char* argv[])
 	vector<unsigned char> arr;
 
 	std::cout << "Loading imagenet Image \n";
-	read_image_opencv("/home/nvidia/FBF-TF-SimpleExample/mobilenet/banana_0.jpg", input);
+	read_image_opencv("/home/nvidia/FBF-TF-SimpleExample/mobilenet/apple.jpg", input);
 
 	if(!bUseTwoModel){
 		tflite::UnitHandler Uhandler(originalfilename);
