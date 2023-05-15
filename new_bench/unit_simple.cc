@@ -1,10 +1,12 @@
 //#include "tensorflow/lite/workframe.h" // legacy header
 #include "tensorflow/lite/lite_runtime.h"
 #include "tensorflow/lite/util.h"
-#define SEQ 2
-#define OUT_SEQ 100
+#define SEQ 1
+#define OUT_SEQ 2
 #define mnist 
 #define imagenet
+
+#define twomodel
 
 using namespace cv;
 using namespace std;
@@ -132,13 +134,28 @@ int main(int argc, char* argv[])
   double response_time = 0;
   struct timespec begin, end;
   int n = 0;
+  #ifdef twomodel
+	tflite::TfLiteRuntime runtime(RUNTIME_SOCK, SCHEDULER_SOCK,
+																	 first_model, second_model, tflite::INPUT_TYPE::MNIST);
+  #endif
+
+  #ifndef twomodel
 	tflite::TfLiteRuntime runtime(RUNTIME_SOCK, SCHEDULER_SOCK,
 																	 first_model, tflite::INPUT_TYPE::IMAGENET224);
+  #endif
+
   while(n < OUT_SEQ){
     std::cout << "invoke : " << n << "\n";
-    runtime.FeedInputToModel(first_model, input_imagenet[n % 2], tflite::INPUT_TYPE::IMAGENET224);
+    
+    //runtime.FeedInputToModel(first_model, input_imagenet[n % 2], tflite::INPUT_TYPE::MNIST);
+    runtime.FeedInputToModelDebug(first_model, input_mnist[n % 2], tflite::INPUT_TYPE::MNIST);
+
     clock_gettime(CLOCK_MONOTONIC, &begin);
-    if(runtime.Invoke() != kTfLiteOk){
+    // if(runtime.Invoke() != kTfLiteOk){
+    //   std::cout << "Invoke ERROR" << "\n";
+    //   return -1;
+    // }
+		if(runtime.DebugInvoke() != kTfLiteOk){
       std::cout << "Invoke ERROR" << "\n";
       return -1;
     }

@@ -10,16 +10,14 @@
 #include "tensorflow/lite/delegates/gpu/delegate.h"
 
 #include "tensorflow/lite/util.h"
-#define SEQ 2
-#define OUT_SEQ 100
-// #define mnist 
-#define imagenet
+#define SEQ 1
+#define OUT_SEQ 1
+#define mnist 
+//#define gpu
+//#define imagenet
 
 using namespace cv;
 using namespace std;
-
-#define RUNTIME_SOCK "/home/nvidia/FBF-TF-SimpleExample/new_bench/sock/runtime_1"
-#define SCHEDULER_SOCK "/home/nvidia/FBF-TF-SimpleExample/new_bench/sock/scheduler"
 
 #define TFLITE_MINIMAL_CHECK(x)                              \
   if (!(x)) {                                                \
@@ -166,6 +164,7 @@ int main(int argc, char* argv[])
   builder(&interpreter, 6);
   TFLITE_MINIMAL_CHECK(interpreter != nullptr);
 
+	#ifdef gpu
 	TfLiteDelegate *MyDelegate = NULL;
 
 	const TfLiteGpuDelegateOptionsV2 options = {
@@ -186,9 +185,10 @@ int main(int argc, char* argv[])
 			cerr << "ERROR: Unable to use delegate" << endl;
 			return 0;
 	}
-
+	#endif
 
   TFLITE_MINIMAL_CHECK(interpreter->AllocateTensors() == kTfLiteOk);
+	PrintInterpreterState(interpreter.get());
 	TFLITE_MINIMAL_CHECK(interpreter->Invoke() == kTfLiteOk);
 
   while(n < OUT_SEQ){
