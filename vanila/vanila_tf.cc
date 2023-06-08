@@ -209,10 +209,10 @@ int main(int argc, char* argv[])
     clock_gettime(CLOCK_MONOTONIC, &begin);
 		TFLITE_MINIMAL_CHECK(interpreter->Invoke() == kTfLiteOk);
     clock_gettime(CLOCK_MONOTONIC, &end);
-		// for (int i =0; i<10; i++){
-		// 		printf("%0.5f", interpreter->typed_output_tensor<float>(0)[i] );
-		// 		std:: cout << " ";
-		// }
+		for (int i =0; i<10; i++){
+				printf("%0.5f", interpreter->typed_output_tensor<float>(0)[i] );
+				std:: cout << " ";
+		}
     if(n > 0){ // drop first invoke's data.
       double temp_time = (end.tv_sec - begin.tv_sec) + ((end.tv_nsec - begin.tv_nsec) / 1000000000.0);
       response_time += temp_time;
