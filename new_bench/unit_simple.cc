@@ -1,6 +1,8 @@
 //#include "tensorflow/lite/workframe.h" // legacy header
 #include "tensorflow/lite/lite_runtime.h"
 #include "tensorflow/lite/util.h"
+#include <cmath>
+#include <numeric>
 
 #define SEQ 1
 #define OUT_SEQ 1
@@ -92,12 +94,12 @@ void read_image_opencv(string filename, vector<cv::Mat>& input){
 	}
 	cv::cvtColor(cvimg, cvimg, COLOR_BGR2RGB);
 	cv::Mat cvimg_;
-	cv::resize(cvimg, cvimg_, cv::Size(416, 416), 0, 0, INTER_AREA); //resize
-	cvimg_.convertTo(cvimg_, CV_32FC3, 1 / 127.5f, -1);
+	cv::resize(cvimg, cvimg_, cv::Size(416, 416)); //resize
+	cvimg_.convertTo(cvimg_, CV_32F, 1.0 / 255.0);
 
-	cv::Mat outputImage(cvimg.size(), CV_8UC1);
 
 	// Iterate over each pixel in the input image
+	// cv::Mat outputImage(cvimg.size(), CV_8UC1);
 	// for (int y = 0; y < cvimg.rows; ++y) {
 	// 	for (int x = 0; x < cvimg.cols; ++x) {
 	// 		// Get the pixel value at the current position
@@ -125,8 +127,21 @@ void softmax(std::vector<dataType>& arr,
 															 std::vector<float>& output){
 	dataType maxElement = *std::max_element(arr.begin(), arr.end());
 	float sum = 0.0;
-	for(auto const& i : arr) sum += std::exp(i - maxElement);
+	for(auto const& i : arr) 
+		sum += std::exp(i - maxElement);
+	for(int i=0; i<arr.size(); ++i){
+		output.push_back(std::exp(arr[i] - maxElement) / sum);
+	}
+}
 
+template<typename dataType>
+void softmax(std::vector<dataType>& arr,
+											std::vector<float>& output, int begin){
+	arr.erase(arr.begin(), arr.begin()+begin);
+	dataType maxElement = *std::max_element(arr.begin(), arr.end());
+	float sum = 0.0;
+	for(auto const& i : arr) 
+		sum += std::exp(i - maxElement);
 	for(int i=0; i<arr.size(); ++i){
 		output.push_back(std::exp(arr[i] - maxElement) / sum);
 	}
@@ -143,17 +158,33 @@ void PrintRawOutput(std::vector<std::vector<float>*>* output){
 	}
 }
 
+float sigmoid(float x) {
+  return 1.0 / (1.0 + std::exp(-x));
+}
+
 void ParseOutput(std::vector<std::vector<float>*>* output){
 	std::vector<float> parsed_output;
-	for(int i=0; i<output->size(); ++i){
-		softmax<float>(*(output->at(i)), parsed_output);
-		int max_element = std::max_element(parsed_output.begin(), parsed_output.end()) - parsed_output.begin();
-		printf("%d, %.6f \n", max_element, parsed_output[max_element]);
-		parsed_output.clear();
+	if(output->size() == 1){ // Case of single channel output. (usually classification model)
+		for(int i=0; i<output->size(); ++i){
+			softmax<float>(*(output->at(i)), parsed_output);
+			int max_element = std::max_element(parsed_output.begin(), parsed_output.end()) - parsed_output.begin();
+			printf("%d, %.6f \n", max_element, parsed_output[max_element]);
+			parsed_output.clear();
+		}
+		return;
 	}
+	std::cout << "Got " << output->size() << " outputs to parse" << "\n";
+	for(int i=0; i<output->size(); ++i){ // Case of multiple channel output. (which contains bbox, obj score, classification score)
+		// parsed_output.push_back(sigmoid(output->at(i)->at(4)));
+		parsed_output.push_back(output->at(i)->at(4));
+		softmax<float>(*(output->at(i)), parsed_output, 5);
+		int max_element = std::max_element(parsed_output.begin()+1, parsed_output.end()) - parsed_output.begin();
+		printf("Oscore %.6f, %s %d, %.6f \n", 
+				parsed_output[0], coco_label[max_element].c_str(), max_element, parsed_output[max_element]);
+		parsed_output.clear();
+	}	
 	// std::cout << "parsed_outputs : " << parsed_output.size() << "\n";
 	// for(int idx=0; idx<parsed_output.size()-1; ++idx){
-		
 	// 	printf("%s :  %.6f\n", imagenet_label[idx].c_str(), parsed_output[idx]);
 	// }
 }
@@ -174,6 +205,8 @@ void ParseLabels(){
 	// for(int i=0; i<imagenet_label.size(); ++i){
 	// 	std::cout << imagenet_label[i] << "\n";
 	// }
+	std::cout << "COCO labels : " << coco_label.size() << "\n";
+	std::cout << "IMAGENET labels : " << imagenet_label.size() << "\n";
 }
 
 int main(int argc, char* argv[])
@@ -208,7 +241,7 @@ int main(int argc, char* argv[])
 	#endif
 
 	#ifdef imagenet
-	read_image_opencv("cat_16.jpg", input_imagenet);
+	read_image_opencv("orange.jpg", input_imagenet);
 	// read_image_opencv("orange.jpg", input_imagenet);
 	#endif
 
@@ -217,7 +250,7 @@ int main(int argc, char* argv[])
   int n = 0;
   #ifdef twomodel
 	tflite::TfLiteRuntime runtime(RUNTIME_SOCK, SCHEDULER_SOCK,
-																	 first_model, second_model, tflite::INPUT_TYPE::MNIST);
+																	 first_model, second_model, tflite::INPUT_TYPE::IMAGENET416);
   #endif
 
 	// Output vector
@@ -244,8 +277,8 @@ int main(int argc, char* argv[])
     n++;
 		output = runtime.GetFloatOutputInVector();
 		// PrintRawOutput(output);
-		// ParseLabels();
-		// ParseOutput(output);
+		ParseLabels();
+		ParseOutput(output);
   }
   response_time = response_time / OUT_SEQ;
   printf("Average response time for %d invokes : %.6fs \n", OUT_SEQ, response_time);
