@@ -86,7 +86,8 @@ void read_Mnist_Label(string filename, vector<unsigned char> &arr) {
 }
 #endif
 
-void read_image_opencv(string filename, vector<cv::Mat>& input){
+void read_image_opencv(string filename, vector<cv::Mat>& input,
+											tflite::INPUT_TYPE type){
 	cv::Mat cvimg = cv::imread(filename, cv::IMREAD_COLOR);
 	if(cvimg.data == NULL){
 		std::cout << "=== IMAGE DATA NULL ===\n";
@@ -94,7 +95,23 @@ void read_image_opencv(string filename, vector<cv::Mat>& input){
 	}
 	cv::cvtColor(cvimg, cvimg, COLOR_BGR2RGB);
 	cv::Mat cvimg_;
-	cv::resize(cvimg, cvimg_, cv::Size(416, 416)); //resize
+	switch (type)
+	{
+	case tflite::INPUT_TYPE::IMAGENET224:
+		cv::resize(cvimg, cvimg_, cv::Size(224, 224)); //resize
+		break;
+	
+	case tflite::INPUT_TYPE::IMAGENET300:
+		cv::resize(cvimg, cvimg_, cv::Size(300, 300)); //resize
+		break;
+	
+	case tflite::INPUT_TYPE::IMAGENET416:
+		cv::resize(cvimg, cvimg_, cv::Size(416, 416)); //resize
+		break;
+	
+	default:
+		break;
+	}
 	cvimg_.convertTo(cvimg_, CV_32F, 1.0 / 255.0);
 
 
@@ -122,28 +139,24 @@ void read_image_opencv(string filename, vector<cv::Mat>& input){
 	//size should be 300 300 for ssd-mobilenetv2-lite
 }
 
-template<typename dataType>
-void softmax(std::vector<dataType>& arr,
-															 std::vector<float>& output){
-	dataType maxElement = *std::max_element(arr.begin(), arr.end());
+void softmax(std::vector<float>& input, std::vector<float>& output){
+	float maxElement = *std::max_element(input.begin(), input.end());
 	float sum = 0.0;
-	for(auto const& i : arr) 
+	for(auto const& i : input) 
 		sum += std::exp(i - maxElement);
-	for(int i=0; i<arr.size(); ++i){
-		output.push_back(std::exp(arr[i] - maxElement) / sum);
+	for(int i=0; i<input.size(); ++i){
+		output.push_back(std::exp(input[i] - maxElement) / sum);
 	}
 }
 
-template<typename dataType>
-void softmax(std::vector<dataType>& arr,
-											std::vector<float>& output, int begin){
-	arr.erase(arr.begin(), arr.begin()+begin);
-	dataType maxElement = *std::max_element(arr.begin(), arr.end());
+void softmax(std::vector<float>& input, std::vector<float>& output, int begin){
+	input.erase(input.begin(), input.begin()+begin);
+	float maxElement = *std::max_element(input.begin(), input.end());
 	float sum = 0.0;
-	for(auto const& i : arr) 
+	for(auto const& i : input) 
 		sum += std::exp(i - maxElement);
-	for(int i=0; i<arr.size(); ++i){
-		output.push_back(std::exp(arr[i] - maxElement) / sum);
+	for(int i=0; i<input.size(); ++i){
+		output.push_back(std::exp(input[i] - maxElement) / sum);
 	}
 }
 
@@ -152,7 +165,7 @@ void PrintRawOutput(std::vector<std::vector<float>*>* output){
 	for(int i=0; i< output->size(); ++i){
 		printf("CH [%d]\n", i);
 		for(int j=0; j<output->at(i)->size(); ++j){
-			printf("%.6f ", output->at(i)->at(j));
+			printf("%.6f \n", output->at(i)->at(j));
 		}
 		printf("\n");
 	}
@@ -166,19 +179,20 @@ void ParseOutput(std::vector<std::vector<float>*>* output){
 	std::vector<float> parsed_output;
 	if(output->size() == 1){ // Case of single channel output. (usually classification model)
 		for(int i=0; i<output->size(); ++i){
-			softmax<float>(*(output->at(i)), parsed_output);
-			int max_element = std::max_element(parsed_output.begin(), parsed_output.end()) - parsed_output.begin();
-			printf("%d, %.6f \n", max_element, parsed_output[max_element]);
+			softmax(*(output->at(i)), parsed_output);
+ 			int max_element = std::max_element(parsed_output.begin(), parsed_output.end()) - parsed_output.begin();
+			printf("[Detection result] \n");
+			printf("%d %s, %.6f \n", max_element, imagenet_label[max_element].c_str() ,parsed_output[max_element]);
 			parsed_output.clear();
 		}
 		return;
 	}
 	std::cout << "Got " << output->size() << " outputs to parse" << "\n";
 	for(int i=0; i<output->size(); ++i){ // Case of multiple channel output. (which contains bbox, obj score, classification score)
-		// parsed_output.push_back(sigmoid(output->at(i)->at(4)));
-		parsed_output.push_back(output->at(i)->at(4));
-		softmax<float>(*(output->at(i)), parsed_output, 5);
+		parsed_output.push_back(sigmoid(output->at(i)->at(4)));
+		softmax(*(output->at(i)), parsed_output, 5);
 		int max_element = std::max_element(parsed_output.begin()+1, parsed_output.end()) - parsed_output.begin();
+		printf("[Detection result] \n");
 		printf("Oscore %.6f, %s %d, %.6f \n", 
 				parsed_output[0], coco_label[max_element].c_str(), max_element, parsed_output[max_element]);
 		parsed_output.clear();
@@ -202,11 +216,8 @@ void ParseLabels(){
 	while(getline(imagenet_fd, label)){
 		imagenet_label.push_back(label);
 	}	
-	// for(int i=0; i<imagenet_label.size(); ++i){
-	// 	std::cout << imagenet_label[i] << "\n";
-	// }
-	std::cout << "COCO labels : " << coco_label.size() << "\n";
-	std::cout << "IMAGENET labels : " << imagenet_label.size() << "\n";
+	std::cout << "Got coco labels : " << coco_label.size() << "\n";
+	std::cout << "Got imagenet labels : " << imagenet_label.size() << "\n";
 }
 
 int main(int argc, char* argv[])
@@ -241,7 +252,7 @@ int main(int argc, char* argv[])
 	#endif
 
 	#ifdef imagenet
-	read_image_opencv("orange.jpg", input_imagenet);
+	read_image_opencv("orange.jpg", input_imagenet, tflite::INPUT_TYPE::IMAGENET224);
 	// read_image_opencv("orange.jpg", input_imagenet);
 	#endif
 
@@ -250,7 +261,7 @@ int main(int argc, char* argv[])
   int n = 0;
   #ifdef twomodel
 	tflite::TfLiteRuntime runtime(RUNTIME_SOCK, SCHEDULER_SOCK,
-																	 first_model, second_model, tflite::INPUT_TYPE::IMAGENET416);
+																	 first_model, second_model, tflite::INPUT_TYPE::IMAGENET224);
   #endif
 
 	// Output vector
@@ -259,8 +270,7 @@ int main(int argc, char* argv[])
   while(n < OUT_SEQ){
     std::cout << "invoke : " << n << "\n";
     
-    // runtime.FeedInputToModel(first_model, input_mnist[n % 2], tflite::INPUT_TYPE::MNIST);
-    runtime.FeedInputToModelDebug(first_model, input_imagenet[0], tflite::INPUT_TYPE::IMAGENET416);
+    runtime.FeedInputToModelDebug(first_model, input_imagenet[0], tflite::INPUT_TYPE::IMAGENET224);
 
     clock_gettime(CLOCK_MONOTONIC, &begin);
 
