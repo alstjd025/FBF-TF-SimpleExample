@@ -3,8 +3,8 @@
 #include "tensorflow/lite/util.h"
 #include <cmath>
 #include <numeric>
+#include <ostream>
 
-#define SEQ 1
 #define OUT_SEQ 1
 #define mnist 
 #define imagenet
@@ -112,28 +112,22 @@ void read_image_opencv(string filename, vector<cv::Mat>& input,
 	default:
 		break;
 	}
-	cvimg_.convertTo(cvimg_, CV_32F, 1.0 / 255.0);
+	/* float input
+		cvimg_.convertTo(cvimg_, CV_32F, 1.0 / 255.0);
+		input.push_back(cvimg_);
+	*/
+	
+	// uint8 input
+	cv::Mat quantized;
+	cv::Mat converted;
 
+	// Convert the image to 8-bit unsigned integer
+	cvimg_.convertTo(converted, CV_8U);
 
-	// Iterate over each pixel in the input image
-	// cv::Mat outputImage(cvimg.size(), CV_8UC1);
-	// for (int y = 0; y < cvimg.rows; ++y) {
-	// 	for (int x = 0; x < cvimg.cols; ++x) {
-	// 		// Get the pixel value at the current position
-	// 		cv::Vec3b pixel = cvimg.at<cv::Vec3b>(y, x);
+	// Perform quantization using cv::normalize
+	cv::normalize(converted, quantized, 0, 255, cv::NORM_MINMAX, CV_8U);
 
-	// 		// Calculate the quantized value for each channel (R, G, B)
-	// 		unsigned char quantizedValueR = pixel[0] / 255.0 * 255;
-	// 		unsigned char quantizedValueG = pixel[1] / 255.0 * 255;
-	// 		unsigned char quantizedValueB = pixel[2] / 255.0 * 255;
-
-	// 		// Set the quantized value as the pixel value in the output image
-	// 		outputImage.at<unsigned char>(y, x) = (quantizedValueR + quantizedValueG + quantizedValueB) / 3;
-	// 	}
-	// }
-
-	// input.push_back(outputImage);
-	input.push_back(cvimg_);
+	input.push_back(quantized);
 	//size should be 224 224 for imagenet and mobilenet
 	//size should be 416 416 for yolov4, yolov4_tiny
 	//size should be 300 300 for ssd-mobilenetv2-lite
@@ -142,6 +136,16 @@ void read_image_opencv(string filename, vector<cv::Mat>& input,
 void softmax(std::vector<float>& input, std::vector<float>& output){
 	float maxElement = *std::max_element(input.begin(), input.end());
 	float sum = 0.0;
+	for(auto const& i : input) 
+		sum += std::exp(i - maxElement);
+	for(int i=0; i<input.size(); ++i){
+		output.push_back(std::exp(input[i] - maxElement) / sum);
+	}
+}
+
+void softmax(std::vector<uint8_t>& input, std::vector<float>& output){
+	uint8_t maxElement = *std::max_element(input.begin(), input.end());
+	float sum = 0;
 	for(auto const& i : input) 
 		sum += std::exp(i - maxElement);
 	for(int i=0; i<input.size(); ++i){
@@ -203,6 +207,17 @@ void ParseOutput(std::vector<std::vector<float>*>* output){
 	// }
 }
 
+void ParseOutput(std::vector<std::vector<uint8_t>*>* output){
+	if(output->size() == 1){ // Case of single channel output. (usually classification model)
+		std::vector<float> parsed_output;
+		softmax(*(output->at(0)), parsed_output);
+		int max_element = std::max_element(output->at(0)->begin(), output->at(0)->end()) - output->at(0)->begin();
+		printf("[Detection result] \n");
+		printf("%d %s, %.6f \n", max_element, imagenet_label[max_element].c_str() ,parsed_output[max_element]);
+		return;
+	}
+}
+
 void ParseLabels(){
 	std::string coco_file = "coco_label.txt";
 	std::string imagenet_file = "imagenet_label.txt";
@@ -252,8 +267,8 @@ int main(int argc, char* argv[])
 	#endif
 
 	#ifdef imagenet
+	read_image_opencv("banana_0.jpg", input_imagenet, tflite::INPUT_TYPE::IMAGENET224);
 	read_image_opencv("orange.jpg", input_imagenet, tflite::INPUT_TYPE::IMAGENET224);
-	// read_image_opencv("orange.jpg", input_imagenet);
 	#endif
 
   double response_time = 0;
@@ -266,11 +281,11 @@ int main(int argc, char* argv[])
 
 	// Output vector
 	std::vector<std::vector<float>*>* output;
-
+	std::vector<std::vector<uint8_t>*>* uintoutput;
   while(n < OUT_SEQ){
-    std::cout << "invoke : " << n << "\n";
+    // std::cout << "invoke : " << n << "\n";
     
-    runtime.FeedInputToModelDebug(first_model, input_imagenet[0], tflite::INPUT_TYPE::IMAGENET224);
+    runtime.FeedInputToModelDebug(first_model, input_imagenet[n % 2], tflite::INPUT_TYPE::IMAGENET224);
 
     clock_gettime(CLOCK_MONOTONIC, &begin);
 
@@ -282,13 +297,15 @@ int main(int argc, char* argv[])
     clock_gettime(CLOCK_MONOTONIC, &end);
     if(n > 0){ // drop first invoke's data.
       double temp_time = (end.tv_sec - begin.tv_sec) + ((end.tv_nsec - begin.tv_nsec) / 1000000000.0);
+			// printf("latency : %.6f \n", temp_time);
       response_time += temp_time;
     }
     n++;
-		output = runtime.GetFloatOutputInVector();
+		// output = runtime.GetFloatOutputInVector();
+		uintoutput = runtime.GetUintOutputInVector();
 		// PrintRawOutput(output);
 		ParseLabels();
-		ParseOutput(output);
+		ParseOutput(uintoutput);
   }
   response_time = response_time / OUT_SEQ;
   printf("Average response time for %d invokes : %.6fs \n", OUT_SEQ, response_time);
