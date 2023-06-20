@@ -5,7 +5,7 @@
 #include <numeric>
 #include <ostream>
 
-#define OUT_SEQ 1
+#define OUT_SEQ 100
 #define mnist 
 #define imagenet
 
@@ -112,12 +112,41 @@ void read_image_opencv(string filename, vector<cv::Mat>& input,
 	default:
 		break;
 	}
-	/* float input
-		cvimg_.convertTo(cvimg_, CV_32F, 1.0 / 255.0);
-		input.push_back(cvimg_);
-	*/
+
+	cvimg_.convertTo(cvimg_, CV_32F, 1.0 / 255.0);
+	input.push_back(cvimg_);
+
+	//size should be 224 224 for imagenet and mobilenet
+	//size should be 416 416 for yolov4, yolov4_tiny
+	//size should be 300 300 for ssd-mobilenetv2-lite
+}
+
+void read_image_opencv_quant(string filename, vector<cv::Mat>& input,
+											tflite::INPUT_TYPE type){
+	cv::Mat cvimg = cv::imread(filename, cv::IMREAD_COLOR);
+	if(cvimg.data == NULL){
+		std::cout << "=== IMAGE DATA NULL ===\n";
+		return;
+	}
+	cv::cvtColor(cvimg, cvimg, COLOR_BGR2RGB);
+	cv::Mat cvimg_;
+	switch (type)
+	{
+	case tflite::INPUT_TYPE::IMAGENET224:
+		cv::resize(cvimg, cvimg_, cv::Size(224, 224)); //resize
+		break;
 	
-	// uint8 input
+	case tflite::INPUT_TYPE::IMAGENET300:
+		cv::resize(cvimg, cvimg_, cv::Size(300, 300)); //resize
+		break;
+	
+	case tflite::INPUT_TYPE::IMAGENET416:
+		cv::resize(cvimg, cvimg_, cv::Size(416, 416)); //resize
+		break;
+	
+	default:
+		break;
+	}
 	cv::Mat quantized;
 	cv::Mat converted;
 
@@ -256,6 +285,7 @@ int main(int argc, char* argv[])
 	}
 	vector<cv::Mat> input_mnist;
 	vector<cv::Mat> input_imagenet;
+	vector<cv::Mat> input_iamgenet_quant;
 	vector<unsigned char> arr;
 
 	#ifdef mnist
@@ -269,6 +299,8 @@ int main(int argc, char* argv[])
 	#ifdef imagenet
 	read_image_opencv("banana_0.jpg", input_imagenet, tflite::INPUT_TYPE::IMAGENET224);
 	read_image_opencv("orange.jpg", input_imagenet, tflite::INPUT_TYPE::IMAGENET224);
+	read_image_opencv_quant("banana_0.jpg", input_iamgenet_quant, tflite::INPUT_TYPE::IMAGENET224);
+	read_image_opencv_quant("orange.jpg", input_iamgenet_quant, tflite::INPUT_TYPE::IMAGENET224);
 	#endif
 
   double response_time = 0;
@@ -285,7 +317,8 @@ int main(int argc, char* argv[])
   while(n < OUT_SEQ){
     // std::cout << "invoke : " << n << "\n";
     
-    runtime.FeedInputToModelDebug(first_model, input_imagenet[n % 2], tflite::INPUT_TYPE::IMAGENET224);
+    runtime.FeedInputToModelDebug(first_model, input_imagenet[n % 2], 
+			input_iamgenet_quant[n % 2], tflite::INPUT_TYPE::IMAGENET224);
 
     clock_gettime(CLOCK_MONOTONIC, &begin);
 
