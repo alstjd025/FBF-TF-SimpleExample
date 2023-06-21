@@ -204,6 +204,12 @@ void PrintRawOutput(std::vector<std::vector<float>*>* output){
 	}
 }
 
+void PrintRawOutputMinMax(std::vector<std::vector<float>*>* output){
+	int max_element = std::max_element(output->at(0)->begin(), output->at(0)->end()) - output->at(0)->begin();
+	printf("[Detection result] \n");
+	printf("%d %s, %.6f \n", max_element, imagenet_label[max_element].c_str() ,output->at(0)->at(max_element));
+}
+
 float sigmoid(float x) {
   return 1.0 / (1.0 + std::exp(-x));
 }
@@ -314,6 +320,7 @@ int main(int argc, char* argv[])
 	// Output vector
 	std::vector<std::vector<float>*>* output;
 	std::vector<std::vector<uint8_t>*>* uintoutput;
+	ParseLabels();
   while(n < OUT_SEQ){
     // std::cout << "invoke : " << n << "\n";
     
@@ -334,11 +341,11 @@ int main(int argc, char* argv[])
       response_time += temp_time;
     }
     n++;
-		// output = runtime.GetFloatOutputInVector();
-		uintoutput = runtime.GetUintOutputInVector();
-		// PrintRawOutput(output);
-		ParseLabels();
-		ParseOutput(uintoutput);
+		output = runtime.GetFloatOutputInVector();
+		// uintoutput = runtime.GetUintOutputInVector();
+		PrintRawOutputMinMax(output);
+		// ParseOutput(uintoutput);
+		// ParseOutput(output);
   }
   response_time = response_time / OUT_SEQ;
   printf("Average response time for %d invokes : %.6fs \n", OUT_SEQ, response_time);
